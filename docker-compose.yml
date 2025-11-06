@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  moodtune_frontend:
+    build:
+      context: .
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    image: moodtune/frontend:dev
+    container_name: moodtune_frontend
+    ports:
+      - "8080:80"
+    environment:
+      # En runtime NGINX sólo sirve estáticos. VITE_API_BASE_URL se consume en build.
+      - NODE_ENV=production
