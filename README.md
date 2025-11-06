@@ -10,6 +10,7 @@ Incluye flujo mínimo de inicio/cierre de sesión usando `/sessions/login` y `/s
 - El endpoint `POST /sessions/login` ya crea la sesión en backend; no se hace un `POST /sessions` extra.
 - Cierre de sesión con `DELETE /sessions/{sessionId}` y limpieza del estado local.
 - URL base del API configurable por entorno (`VITE_API_BASE_URL`).
+- Detección de emoción desde imagen en `/detect` usando un servicio FER externo (`VITE_FER_ENDPOINT_URL`) con fallback local.
 - Proxy de desarrollo en Vite para evitar CORS.
 - Dockerfile para build de producción servido con NGINX y `docker-compose` para ejecución sencilla.
   - En producción (Docker), la app usa `VITE_API_BASE_URL` directamente (sin proxy).
@@ -23,6 +24,8 @@ Incluye flujo mínimo de inicio/cierre de sesión usando `/sessions/login` y `/s
 cd moodtune_frontend
 cp .env.example .env
 # Ajusta VITE_API_BASE_URL si es necesario (por defecto http://localhost:8000)
+# (Opcional) Para FER real, levanta `moodtune_fer` y configura:
+# VITE_FER_ENDPOINT_URL=http://localhost:8081/infer
 npm install
 npm run dev
 ```
