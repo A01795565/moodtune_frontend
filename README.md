@@ -24,8 +24,11 @@ Incluye flujo mínimo de inicio/cierre de sesión usando `/sessions/login` y `/s
 cd moodtune_frontend
 cp .env.example .env
 # Ajusta VITE_API_BASE_URL si es necesario (por defecto http://localhost:8000)
-# (Opcional) Para FER real, levanta `moodtune_fer` y configura:
-# VITE_FER_ENDPOINT_URL=http://localhost:8081/infer
+# (Opcional) Para FER real, levanta `moodtune_fer`.
+# En desarrollo puedes:
+#  - Usar el proxy '/fer-proxy' sin configurar nada (apunta a http://localhost:8081 por defecto)
+#  - O definir VITE_FER_BASE_URL para cambiar el destino del proxy
+#  - O definir VITE_FER_ENDPOINT_URL con el endpoint completo (ej: http://localhost:8081/infer)
 npm install
 npm run dev
 ```
@@ -42,17 +45,17 @@ npm run preview # previsualización estática local en :5173
 Compilar y ejecutar con Docker directamente:
 ```bash
 cd moodtune_frontend
-docker build -t moodtune/frontend .
+docker build -t moodtune/frontend --build-arg VITE_API_BASE_URL=http://localhost:8000 --build-arg VITE_FER_ENDPOINT_URL=http://localhost:8081/infer .
 # Servir en el puerto 8080
-docker run --rm -p 8080:80 -e VITE_API_BASE_URL=http://localhost:8000 moodtune/frontend
+docker run --rm -p 8080:80 -e VITE_API_BASE_URL=http://localhost:8000 -e VITE_FER_ENDPOINT_URL=http://localhost:8081/infer moodtune/frontend
 ```
 
 O usar Docker Compose:
 ```bash
 cd moodtune_frontend
-# Opcional: exportar VITE_API_BASE_URL para el build
-# PowerShell: $env:VITE_API_BASE_URL="http://localhost:8000"
-# Bash:      export VITE_API_BASE_URL=http://localhost:8000
+# Opcional: exportar VITE_API_BASE_URL y VITE_FER_ENDPOINT_URL para el build
+# PowerShell: $env:VITE_API_BASE_URL="http://localhost:8000"; $env:VITE_FER_ENDPOINT_URL="http://localhost:8081/infer"
+# Bash:      export VITE_API_BASE_URL=http://localhost:8000; export VITE_FER_ENDPOINT_URL=http://localhost:8081/infer
 
 docker compose up --build
 # App en http://localhost:8080

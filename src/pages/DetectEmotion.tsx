@@ -21,6 +21,7 @@ export default function DetectEmotion() {
   const [intention, setIntention] = useState<'maintain' | 'change' | ''>('');
   const [saved, setSaved] = useState<string | null>(null);
   const [ferStatus, setFerStatus] = useState<'checking' | 'ok' | 'error' | 'not_set'>('checking');
+  const [ferError, setFerError] = useState<string | null>(null);
 
   useEffect(() => {
     return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
@@ -28,16 +29,39 @@ export default function DetectEmotion() {
 
   // Comprobar salud del servicio FER si está configurado
   useEffect(() => {
-    (async () => {
-      try {
-        if (!ferApi.isConfigured()) { setFerStatus('not_set'); return; }
-        const s = await ferApi.health();
-        setFerStatus(s);
-      } catch {
-        setFerStatus('error');
-      }
-    })();
+    checkFerNow();
   }, []);
+
+  const checkFerNow = async () => {
+    setFerStatus('checking');
+    setFerError(null);
+    try {
+      const endpoint = ferApi.effectiveEndpoint() as string | null;
+      if (!endpoint) { setFerStatus('not_set'); setFerError('VITE_FER_ENDPOINT_URL no definida'); return; }
+      let healthUrl: string | null = null;
+      if (endpoint.endsWith('/infer')) healthUrl = endpoint.replace(/\/infer$/, '/health');
+      else {
+        try { const u = new URL(endpoint); healthUrl = `${u.origin}/health`; } catch { healthUrl = null; }
+      }
+      if (!healthUrl) { setFerStatus('error'); setFerError('URL de FER inválida'); return; }
+      if (typeof window !== 'undefined' && window.location?.protocol === 'https:' && healthUrl.startsWith('http://')) {
+        setFerError('Posible bloqueo por contenido mixto (https → http).');
+      }
+      const res = await fetch(healthUrl, { method: 'GET' });
+      if (!res.ok) {
+        const t = await res.text().catch(() => '');
+        setFerStatus('error');
+        setFerError(`${res.status} ${res.statusText}${t ? ` - ${t}` : ''}`);
+        return;
+      }
+      const data = await res.json().catch(() => ({} as any));
+      if ((data as any)?.status === 'ok') { setFerStatus('ok'); setFerError(null); }
+      else { setFerStatus('error'); setFerError('Respuesta inválida del health'); }
+    } catch (e: any) {
+      setFerStatus('error');
+      setFerError(e?.message || 'Error de red al consultar FER');
+    }
+  };
 
   const resetAll = () => {
     setFile(null); setPreviewUrl(null); setResult(null); setError(null); setIntention(''); setSaved(null);
@@ -187,6 +211,17 @@ export default function DetectEmotion() {
               >
                 FER: {ferStatus === 'checking' ? 'comprobando…' : ferStatus === 'ok' ? 'remoto activo' : ferStatus === 'not_set' ? 'no configurado' : 'no disponible'}
               </span>
+            </div>
+            <div style={{ marginTop: 6 }}>
+              <button onClick={checkFerNow} disabled={ferStatus === 'checking'} style={{ padding: '4px 8px' }}>
+                Check Status
+              </button>
+            </div>
+            <div style={{ fontSize: 11, color: ferStatus === 'error' ? '#9b1c1c' : '#666' }}>
+              Endpoint: {import.meta.env.VITE_FER_ENDPOINT_URL || 'no definido'}{ferError ? ` — Error: ${ferError}` : ''}
+            </div>
+            <div style={{ fontSize: 11, color: ferStatus === 'error' ? '#9b1c1c' : '#666' }}>
+              Endpoint efectivo: {ferApi.effectiveEndpoint() || 'no definido'}
             </div>
             <label>
               Intencion

@@ -15,6 +15,13 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api-proxy/, ''),
       },
+      // Proxy para el servicio FER durante desarrollo
+      // Permite usar '/fer-proxy' sin CORS y sin definir VITE_FER_ENDPOINT_URL en dev
+      '/fer-proxy': {
+        target: process.env.VITE_FER_BASE_URL || 'http://localhost:8081',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/fer-proxy/, ''),
+      },
     },
   },
 });
