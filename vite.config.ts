@@ -22,6 +22,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/fer-proxy/, ''),
       },
+      // Proxy para el servicio RAG durante desarrollo
+      '/rag-proxy': {
+        target: process.env.VITE_RAG_BASE_URL || 'http://localhost:8010',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/rag-proxy/, ''),
+      },
     },
   },
 });

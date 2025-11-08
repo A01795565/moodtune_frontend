@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../api/client';
 import { ferApi } from '../api/fer';
+import { ragApi, type RagSearchResponse, type RagTrack } from '../api/rag';
 import type { InferenceCreate, Emotion } from '../types/api';
 
 type DetectionResult = { emotion: Emotion; confidence: number; model_version?: string };
@@ -22,6 +24,12 @@ export default function DetectEmotion() {
   const [saved, setSaved] = useState<string | null>(null);
   const [ferStatus, setFerStatus] = useState<'checking' | 'ok' | 'error' | 'not_set'>('checking');
   const [ferError, setFerError] = useState<string | null>(null);
+  // Sugerencias desde RAG
+  const [tracksLoading, setTracksLoading] = useState(false);
+  const [tracksError, setTracksError] = useState<string | null>(null);
+  const [tracks, setTracks] = useState<RagSearchResponse | null>(null);
+  const [showCount, setShowCount] = useState<number>(10);
+  const tracksRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
@@ -70,6 +78,7 @@ export default function DetectEmotion() {
 
   const onFileChange = (f: File | null) => {
     setResult(null); setError(null); setSaved(null);
+    setTracks(null); setTracksError(null);
     if (!f) { setFile(null); setPreviewUrl(null); return; }
     if (!/^image\//.test(f.type)) { setError('Selecciona una imagen valida.'); return; }
     if (f.size > 8 * 1024 * 1024) { setError('La imagen supera 8MB.'); return; }
@@ -138,6 +147,56 @@ export default function DetectEmotion() {
     }
   };
 
+  // Mapear emoción FER -> emoción RAG
+  const mapFerToRagEmotion = (e: Emotion): 'happy' | 'sad' | 'angry' => {
+    if (e === 'joy') return 'happy';
+    if (e === 'sadness') return 'sad';
+    return 'angry';
+  };
+
+  // Helpers de presentación para tracks
+  const coverFromApi = (t: RagTrack): string | null => {
+    const candidates = [t.cover_url, t.image_url, t.thumbnail_url, t.artwork_url, (t as any).artworkUrl as string | undefined, t.artworkUrl100].filter(Boolean) as string[];
+    if (!candidates.length) return null;
+    let u = candidates[0];
+    u = u.replace(/100x100bb\.(jpg|png)$/i, '300x300bb.$1');
+    return u;
+  };
+  const httpLinkFromUri = (u?: string | null): string | null => {
+    const x = (u || '').trim();
+    return /^https?:\/\//i.test(x) ? x : null;
+  };
+
+  // Buscar canciones para la emoción detectada
+  const fetchTracksForEmotion = async () => {
+    if (!result?.emotion) return;
+    setTracksLoading(true); setTracksError(null); setTracks(null);
+    try {
+      const ragEmotion = mapFerToRagEmotion(result.emotion);
+      const res = await ragApi.search({ emotion: ragEmotion, min_tracks: 20 });
+      setTracks(res);
+    } catch (e: any) {
+      setTracksError(e?.message || 'Error al buscar canciones');
+    } finally {
+      setTracksLoading(false);
+    }
+  };
+
+  // Auto-buscar canciones cuando haya resultado de emoción
+  useEffect(() => {
+    if (result?.emotion) {
+      fetchTracksForEmotion();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result?.emotion]);
+
+  // Auto scroll a la lista cuando llega
+  useEffect(() => {
+    if (!tracksLoading && tracks?.items?.length) {
+      try { tracksRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
+    }
+  }, [tracksLoading, tracks]);
+
   const saveInference = async () => {
     if (!sessionId) { setError('No hay sesion activa. Inicia sesion.'); return; }
     if (!result) { setError('No hay resultado para guardar.'); return; }
@@ -162,13 +221,52 @@ export default function DetectEmotion() {
 
   return (
     <div>
-      <h2>Detectar emocion desde imagen</h2>
-      <p style={{ color: '#666' }}>Carga una imagen, detecta emocion y elige intencion.</p>
-      <div style={{ margin: '12px 0', padding: 12, border: '1px solid #eee', borderRadius: 8, background: '#fafafa' }}>
-        <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input type="checkbox" checked={consent} onChange={(e)=>setConsent(e.target.checked)} />
-          <span>Consentimiento para procesar esta imagen (FER).</span>
-        </label>
+      <h2>Detectar emoción y descubrir música</h2>
+      <p style={{ color: '#666' }}>1) Carga una imagen. 2) Detecta tu emoción. 3) Explora canciones alineadas.</p>
+      <div style={{ margin: '12px 0', padding: 12, border: '1px solid #e5e7eb', borderRadius: 8, background: '#f9fafb' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input type="checkbox" checked={consent} onChange={(e)=>setConsent(e.target.checked)} />
+            <span>Consentimiento para procesar esta imagen (FER).</span>
+          </label>
+          <div style={{ display: 'grid', gap: 6, justifyItems: 'end', minWidth: 260, flex: '1 1 260px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'flex-end' }}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  padding: '4px 10px',
+                  borderRadius: 12,
+                  background: ferStatus === 'ok' ? '#def7ec' : ferStatus === 'not_set' ? '#eef2ff' : '#fde8e8',
+                  color: ferStatus === 'ok' ? '#03543f' : ferStatus === 'not_set' ? '#3730a3' : '#9b1c1c',
+                  fontSize: 13,
+                }}
+                title={
+                  ferStatus === 'ok'
+                    ? 'FER remoto operativo'
+                    : ferStatus === 'not_set'
+                    ? 'VITE_FER_ENDPOINT_URL no configurado'
+                    : ferStatus === 'checking'
+                    ? 'Comprobando FER'
+                    : 'FER no disponible'
+                }
+              >
+                FER: {ferStatus === 'checking' ? 'comprobando…' : ferStatus === 'ok' ? 'remoto activo' : ferStatus === 'not_set' ? 'no configurado' : 'no disponible'}
+              </span>
+              <button onClick={checkFerNow} disabled={ferStatus === 'checking'} style={{ padding: '6px 10px' }}>
+                Check Status
+              </button>
+            </div>
+            <div style={{ fontSize: 12, lineHeight: 1.4, color: ferStatus === 'error' ? '#9b1c1c' : '#475569', textAlign: 'right' }}>
+              <div>
+                Endpoint: {import.meta.env.VITE_FER_ENDPOINT_URL || 'no definido'}
+                {ferError ? ` — Error: ${ferError}` : ''}
+              </div>
+              <div>
+                Endpoint efectivo: {ferApi.effectiveEndpoint() || 'no definido'}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' }}>
@@ -187,42 +285,68 @@ export default function DetectEmotion() {
         <div>
           <div style={{ display: 'grid', gap: 10 }}>
             <button onClick={detect} disabled={!consent || !file || detecting} style={{ padding: '8px 12px' }}>
-              {detecting ? 'Detectando...' : 'Detectar emocion'}
+              {detecting ? 'Detectando…' : 'Detectar emoción'}
             </button>
             {error && <div style={{ color: 'crimson' }}>{error}</div>}
             {result && (
               <div style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12 }}>
-                <div><strong>Emocion:</strong> {result.emotion}</div>
+                <div><strong>Emoción:</strong> {result.emotion}</div>
                 <div><strong>Confianza:</strong> {(result.confidence*100).toFixed(1)}%</div>
                 <div><strong>Modelo:</strong> {result.model_version || '-'}</div>
               </div>
             )}
-            <div style={{ fontSize: 12 }}>
-              <span
-                style={{
-                  display: 'inline-block',
-                  marginTop: 8,
-                  padding: '2px 8px',
-                  borderRadius: 12,
-                  background: ferStatus === 'ok' ? '#def7ec' : ferStatus === 'not_set' ? '#eef2ff' : '#fde8e8',
-                  color: ferStatus === 'ok' ? '#03543f' : ferStatus === 'not_set' ? '#3730a3' : '#9b1c1c',
-                }}
-                title={ferStatus === 'ok' ? 'FER remoto operativo' : ferStatus === 'not_set' ? 'VITE_FER_ENDPOINT_URL no configurado' : ferStatus === 'checking' ? 'Comprobando FER' : 'FER no disponible'}
-              >
-                FER: {ferStatus === 'checking' ? 'comprobando…' : ferStatus === 'ok' ? 'remoto activo' : ferStatus === 'not_set' ? 'no configurado' : 'no disponible'}
-              </span>
-            </div>
-            <div style={{ marginTop: 6 }}>
-              <button onClick={checkFerNow} disabled={ferStatus === 'checking'} style={{ padding: '4px 8px' }}>
-                Check Status
-              </button>
-            </div>
-            <div style={{ fontSize: 11, color: ferStatus === 'error' ? '#9b1c1c' : '#666' }}>
-              Endpoint: {import.meta.env.VITE_FER_ENDPOINT_URL || 'no definido'}{ferError ? ` — Error: ${ferError}` : ''}
-            </div>
-            <div style={{ fontSize: 11, color: ferStatus === 'error' ? '#9b1c1c' : '#666' }}>
-              Endpoint efectivo: {ferApi.effectiveEndpoint() || 'no definido'}
-            </div>
+            {result && (
+
+              <div ref={tracksRef} style={{ border: '1px dashed #cbd5e1', borderRadius: 8, padding: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button onClick={fetchTracksForEmotion} disabled={tracksLoading} style={{ padding: '6px 10px' }}>
+                    {tracksLoading ? 'Buscando canciones…' : 'Descubrir canciones para esta emoción'}
+                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+                    <label style={{ fontSize: 13 }}>Mostrar
+                      <select value={showCount} onChange={(e)=>setShowCount(Number(e.target.value)||10)} style={{ marginLeft: 6 }}>
+                        {[5,10,15,20,30,50].map(n => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                    </label>
+                    <Link to={`/explore${result ? `?emotion=${mapFerToRagEmotion(result.emotion)}` : ''}`} style={{ fontSize: 13 }}>Ver más en Explorar ↗</Link>
+                  </div>
+                </div>
+                {tracksError && <div style={{ color: 'crimson', marginTop: 8 }}>{tracksError}</div>}
+                {tracks?.note && (
+                  <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', color: '#9a3412', padding: 8, borderRadius: 6, marginTop: 8 }}>
+                    {tracks.note}
+                  </div>
+                )}
+                {tracks?.items?.length ? (
+                  <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+                    {tracks.items.slice(0, Math.max(1, showCount)).map((t, idx) => {
+                      const cover = coverFromApi(t as RagTrack);
+                      const link = httpLinkFromUri(t.uri);
+                      return (
+                        <div key={`${t.id || t.uri || idx}`} style={{ display: 'grid', gridTemplateColumns: '30px 56px 1fr auto', gap: 10, alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: 10, padding: 8, background: '#fff' }}>
+                          <div style={{ textAlign: 'right', paddingRight: 4, color: '#64748b', fontVariantNumeric: 'tabular-nums' }}>{idx + 1}.</div>
+                          <div style={{ width: 48, height: 48, borderRadius: 6, overflow: 'hidden', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {cover ? (
+                              <img src={cover} alt="Carátula" width={48} height={48} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <div style={{ fontSize: 10, color: '#888' }}>Sin<br/>carátula</div>
+                            )}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 600, lineHeight: 1.2 }}>{t.title || '—'}</div>
+                            <div style={{ color: '#555', fontSize: 13 }}>{t.artist || '—'}</div>
+                          </div>
+                          <div>
+                            {link && <a href={link} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>Abrir ↗</a>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            )}
+            {/* Estado FER movido a barra superior */}
             <label>
               Intencion
               <select value={intention} onChange={(e)=>setIntention(e.target.value as any)}>

@@ -3,6 +3,7 @@ import Login from './pages/Login';
 import Main from './pages/Main';
 import Health from './pages/Health';
 import DetectEmotion from './pages/DetectEmotion';
+import ExploreRag from './pages/ExploreRag';
 import Users from './pages/Users';
 import Sessions from './pages/Sessions';
 import Inferences from './pages/Inferences';
@@ -33,6 +34,7 @@ export default function App() {
             <>
               <Link to="/">Main</Link>
               <Link to="/detect">Detect</Link>
+              <Link to="/explore">Explorar</Link>
               <Link to="/admin">Admin</Link>
               <button onClick={logout} style={{ padding: '6px 10px' }}>Logout</button>
             </>
@@ -53,6 +55,7 @@ export default function App() {
         />
         <Route path="/health" element={<ProtectedRoute><Health /></ProtectedRoute>} />
         <Route path="/detect" element={<ProtectedRoute><DetectEmotion /></ProtectedRoute>} />
+        <Route path="/explore" element={<ProtectedRoute><ExploreRag /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
         <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
         <Route path="/sessions" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
