@@ -1,18 +1,25 @@
+// Página "Explorar" para buscar canciones por emoción vía servicio RAG.
+// - Permite elegir una emoción y un mínimo de resultados.
+// - Muestra carátula, título/autor, preview y link abierto en Spotify.
+// - Usa utilidades de API y un helper para convertir URIs a enlaces.
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ragApi, type RagTrack, type RagSearchResponse } from '../api/rag';
+import { linkInfoForTrack } from '../utils/links';
+import { ProviderIcon } from '../components/ProviderIcon';
 
+// Emociones soportadas (alineadas con el backend RAG)
 type EmotionKey = 'happy' | 'sad' | 'angry' | 'relaxed';
+// prettier-ignore
 const EMOTIONS: { key: EmotionKey; label: string; emoji: string; hint: string }[] = [
-  { key: 'happy', label: 'Feliz', emoji: '😊', hint: 'positivo, energético' },
-  { key: 'sad', label: 'Triste', emoji: '😢', hint: 'introspectivo, suave' },
-  { key: 'angry', label: 'Intenso', emoji: '🔥', hint: 'alto pulso, potente' },
-  { key: 'relaxed', label: 'Relajado', emoji: '🌙', hint: 'tranquilo, chill' },
+  { key: 'happy', label: 'Feliz',    emoji: '😊', hint: 'positivo, energético' },
+  { key: 'sad',   label: 'Triste',   emoji: '😢', hint: 'introspectivo, suave' },
+  { key: 'angry', label: 'Intenso',  emoji: '😤', hint: 'alto pulso, potente' },
+  { key: 'relaxed', label: 'Relajado', emoji: '😌', hint: 'tranquilo, chill' },
 ];
 
-// Ya no inferimos portada ni enlaces desde URIs de Spotify/iTunes.
-// Usamos únicamente los campos que entrega el backend.
-
+// Determina la mejor imagen de portada disponible para el track recibido.
+// Usa campos provistos por el backend (sin inferir desde URIs externas).
 function coverFromApi(t: RagTrack): string | null {
   // Tomar primero campos provistos por /rag/search si existen
   const candidates = [
@@ -30,6 +37,7 @@ function coverFromApi(t: RagTrack): string | null {
   return u;
 }
 
+// Pequeño chip visual para mostrar una métrica (valence/energy) de 0..1 como porcentaje.
 function Metric({ label, value }: { label: string; value?: number }) {
   const v = typeof value === 'number' ? Math.round(value * 100) : null;
   return (
@@ -40,18 +48,23 @@ function Metric({ label, value }: { label: string; value?: number }) {
       padding: '2px 6px',
       borderRadius: 8,
       marginRight: 6,
-    }}>{label}: {v !== null ? `${v}` : '―'}</span>
+    }}>{label}: {v !== null ? `${v}` : '—'}</span>
   );
 }
 
+// Tarjeta de resultado para una pista: portada, título, artista, preview y enlace.
 function TrackCard({ t }: { t: RagTrack }) {
   const apiCover = coverFromApi(t);
   const coverUrl = apiCover;
-  const linkUrl = useMemo(() => {
-    const u = (t.uri || '').trim();
-    if (/^https?:\/\//i.test(u)) return u;
-    return null;
-  }, [t.uri]);
+  // Convierte la pista (uri/provider/external_id) en un link navegable + tipo
+  const link = useMemo(() => linkInfoForTrack(t as any), [t]);
+  const linkA11y = useMemo(() => {
+    if (!link) return null;
+    const provider = link.kind === 'spotify' ? 'Spotify' : link.kind === 'itunes' ? 'Apple Music' : 'web';
+    const base = `Abrir en ${provider}`;
+    const title = [base, t.title, t.artist].filter(Boolean).join(' · ');
+    return title;
+  }, [link, t.title, t.artist]);
   return (
     <div style={{
       border: '1px solid #e5e7eb',
@@ -66,8 +79,7 @@ function TrackCard({ t }: { t: RagTrack }) {
           {coverUrl ? (
             <img src={coverUrl} alt="Carátula" loading="lazy" width={64} height={64} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
-            <div style={{ fontSize: 12, color: '#888' }}>Sin
-              {' '}carátula</div>
+            <div style={{ fontSize: 12, color: '#888' }}>Sin carátula</div>
           )}
         </div>
         <div>
@@ -75,9 +87,26 @@ function TrackCard({ t }: { t: RagTrack }) {
           <div style={{ color: '#555' }}>{t.artist || '—'}</div>
         </div>
         <div>
-          {linkUrl && (
-            <a href={linkUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>
-              Abrir ↗
+          {link && linkA11y && (
+            <a
+              href={link.url}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={linkA11y}
+              title={linkA11y}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 28,
+                height: 28,
+                borderRadius: 9999,
+                background: '#f3f4f6',
+                color: '#111',
+                textDecoration: 'none',
+              }}
+            >
+              <ProviderIcon kind={link.kind} size={16} />
             </a>
           )}
         </div>
@@ -98,6 +127,7 @@ function TrackCard({ t }: { t: RagTrack }) {
   );
 }
 
+// Vista principal: selector de emoción, cantidad mínima, submit y resultados.
 export default function ExploreRag() {
   const [searchParams] = useSearchParams();
   const [emotion, setEmotion] = useState<EmotionKey>('happy');
@@ -128,6 +158,7 @@ export default function ExploreRag() {
 
   return (
     <div>
+      {/* Encabezado y ayuda breve */}
       <h2>Explorar música por emoción</h2>
       <p style={{ color: '#555', marginTop: 4 }}>Selecciona cómo te sientes y descubre canciones alineadas a ese estado.</p>
 
@@ -168,7 +199,7 @@ export default function ExploreRag() {
           <button type="submit" disabled={loading} style={{ padding: '8px 14px' }}>
             {loading ? 'Buscando…' : 'Buscar canciones'}
           </button>
-          <Link to="/detect" style={{ marginLeft: 'auto', fontSize: 14 }}>¿No sabes tu emoción? Detecta ↗</Link>
+          <Link to="/detect" style={{ marginLeft: 'auto', fontSize: 14 }}>¿No sabes tu emoción? Detecta aquí</Link>
         </div>
       </form>
 
@@ -184,7 +215,7 @@ export default function ExploreRag() {
             </div>
           )}
           <div style={{ color: '#555', marginBottom: 8 }}>
-            Emoción «{data.emotion}». Resultados: {data.returned}. Mostrando hasta {Math.max(data.requested_min * 2, 50)}.
+            Emoción “{data.emotion}”. Resultados: {data.returned}. Mostrando hasta {Math.max(data.requested_min * 2, 50)}.
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
             {data.items?.map((t, idx) => (
