@@ -1,33 +1,41 @@
-import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+
+import AppCard from '../components/AppCard';
+import AppDescriptionList from '../components/AppDescriptionList';
+import AppTile from '../components/AppTile';
+
+import './Main.css';
 
 export default function Main() {
   const { user, sessionId } = useAuth();
+
   const cards = [
     { to: '/detect', title: 'Detect', desc: 'Detectar emoción desde imagen' },
   ];
 
   return (
-    <div>
-      <h2>Panel principal</h2>
+    <div className="main">
+      <h2 className="main__title">Panel principal</h2>
+
       {user ? (
-        <div style={{ lineHeight: 1.6, marginBottom: 12 }}>
-          <div><strong>Usuario:</strong> {user.display_name || user.user_id}</div>
-          <div><strong>Email hash:</strong> {user.email_hash}</div>
-          <div><strong>Session:</strong> {sessionId}</div>
-        </div>
+        <AppCard>
+          <div className="main__user">
+            <AppDescriptionList
+              rows={[
+                { label: 'Usuario:', value: user.display_name || user.user_id },
+                { label: 'Email hash:', value: user.email_hash },
+                { label: 'Session:', value: sessionId },
+              ]}
+            />
+          </div>
+        </AppCard>
       ) : null}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
+
+      <section className="main__grid" aria-label="Acciones rápidas">
         {cards.map((c) => (
-          <Link key={c.to} to={c.to} style={{
-            display: 'block', border: '1px solid #ddd', padding: 12, borderRadius: 8,
-            textDecoration: 'none', color: '#222', background: '#fafafa'
-          }}>
-            <div style={{ fontWeight: 700 }}>{c.title}</div>
-            <div style={{ color: '#666', fontSize: 13 }}>{c.desc}</div>
-          </Link>
+          <AppTile key={c.to} to={c.to} title={c.title} desc={c.desc} />
         ))}
-      </div>
+      </section>
     </div>
   );
 }

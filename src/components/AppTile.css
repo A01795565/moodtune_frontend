@@ -1,0 +1,32 @@
+.tile{
+    display: block;
+    text-decoration: none;
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid color-mix(in oklab, var(--text) 10%, transparent);
+    border-radius: 14px;
+    padding: 14px;
+    transition: transform .06s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+    box-shadow: var(--shadow);
+    min-height: 88px;
+  }
+  .tile:hover{
+    transform: translateY(-1px);
+    background: color-mix(in oklab, var(--text) 4%, var(--card));
+    border-color: color-mix(in oklab, var(--primary) 35%, transparent);
+    box-shadow: 0 10px 22px color-mix(in oklab, var(--primary) 18%, transparent);
+  }
+  .tile:focus{
+    outline: none;
+    box-shadow: var(--ring);
+  }
+  .tile__title{
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+  .tile__desc{
+    color: var(--muted);
+    font-size: 13px;
+  }
+  
