@@ -1,0 +1,48 @@
+.btn{
+    position: relative;
+    border: 0;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: transform .06s ease, filter .2s ease, box-shadow .2s ease;
+    will-change: transform;
+  }
+  .btn--full{ width: 100%; }
+  .btn:active{ transform: translateY(1px); }
+  .btn[disabled]{ opacity: .75; cursor: not-allowed; }
+  
+  .btn--primary{
+    color: #fff;
+    background: linear-gradient(180deg, var(--primary), var(--primary-strong));
+    box-shadow: 0 8px 16px color-mix(in oklab, var(--primary) 35%, transparent);
+  }
+  .btn--primary:hover{ filter: brightness(1.02); }
+  .btn--primary:focus{ box-shadow: var(--ring); }
+  
+  .btn--ghost{
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid color-mix(in oklab, var(--text) 14%, transparent);
+  }
+  .btn--ghost:hover{
+    color: var(--text);
+    background: color-mix(in oklab, var(--text) 6%, transparent);
+  }
+  .btn--ghost:focus{ box-shadow: var(--ring); }
+  
+  /* Spinner cuando data-loading="true" */
+  .btn[data-loading]{ color: transparent; }
+  .btn[data-loading]::after{
+    content: "";
+    position: absolute;
+    inset: 0; margin: auto;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  

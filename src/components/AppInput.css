@@ -1,0 +1,38 @@
+.field{ display: grid; gap: 6px; }
+.label{
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.input-row{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.input{
+  width: 100%;
+  appearance: none;
+  border: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
+  background: color-mix(in oklab, var(--bg-soft) 70%, var(--card));
+  color: var(--text);
+  font-size: 15px;
+  padding: 12px 12px;
+  border-radius: 12px;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.input::placeholder{ color: color-mix(in oklab, var(--muted) 70%, transparent); }
+.input:focus{ border-color: var(--primary); box-shadow: var(--ring); }
+.input[aria-invalid="true"]{ border-color: var(--danger); }
+
+.field-error{
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.hint{
+  color: var(--muted);
+  font-size: 12px;
+}

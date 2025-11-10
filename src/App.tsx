@@ -13,6 +13,7 @@ import AuditLogs from './pages/AuditLogs';
 import OAuthTokens from './pages/OAuthTokens';
 import Admin from './pages/Admin';
 import { useAuth } from './hooks/useAuth';
+import './App.css';
 
 // Componente de ruta protegida: redirige a /login si no hay autenticación.
 function ProtectedRoute({ children }: { children: JSX.Element }) {
