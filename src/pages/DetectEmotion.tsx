@@ -14,6 +14,7 @@ import AppFormField from '../components/AppFormField';
 import AppTrackItem from '../components/AppTrackItem';
 
 import './DetectEmotion.css';
+import AppFilePicker from '../components/AppFilePicker';
 
 type DetectionResult = { emotion: Emotion; confidence: number; model_version?: string };
 
@@ -365,11 +366,17 @@ export default function DetectEmotion() {
       <div className="detect__grid">
         {/* Columna izquierda */}
         <div className="detect__uploader">
-          <div className="detect__row">
-            <input ref={inputRef} type="file" accept="image/*" onChange={(e)=>onFileChange(e.target.files?.[0] || null)} />
-            <AppButton variant="ghost" onClick={resetAll}>Limpiar</AppButton>
-          </div>
-
+          <AppFilePicker
+            file={file}
+            previewUrl={previewUrl || undefined}
+            onChange={(f) => onFileChange(f)}
+            onClear={resetAll}
+            accept="image/*"
+            maxSizeMB={8}
+            useDropzone
+            errorText={error || null}
+            label="Seleccionar imagen"
+          />
           {previewUrl && (
             <div className="detect__preview">
               <img ref={imgRef} src={previewUrl} alt="preview" onLoad={() => setError(null)} onError={() => setError('Imagen invalida o corrupta')} />
