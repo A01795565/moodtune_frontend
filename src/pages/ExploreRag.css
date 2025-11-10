@@ -1,0 +1,60 @@
+@import '../App.css';
+
+.explore{
+  display: grid;
+  gap: 16px;
+}
+.explore__title{
+  font-size: clamp(20px, 2.2vw, 24px);
+  margin: 0;
+}
+.explore__subtitle{
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Form */
+.explore__form{
+  display: grid;
+  gap: 16px;
+  margin-top: 12px;
+}
+.explore__emogrid{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 12px;
+}
+@media (max-width: 900px){
+  .explore__emogrid{ grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+}
+@media (max-width: 520px){
+  .explore__emogrid{ grid-template-columns: 1fr; }
+}
+
+.explore__controls{
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.explore__spacer{ margin-left: auto; }
+
+/* Resultados */
+.explore__note{
+  background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412;
+  padding: 10px; border-radius: 8px; margin-bottom: 12px;
+}
+.explore__summary{ color: var(--muted); }
+.explore__grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+/* Inputs compatibles con theme */
+.range, .select{
+  font: inherit;
+  color: var(--text);
+  background: color-mix(in oklab, var(--bg-soft) 70%, var(--card));
+  border: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+.range{ width: 180px; }
