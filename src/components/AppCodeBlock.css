@@ -1,0 +1,29 @@
+@import '../App.css';
+
+.codeblock{
+  position: relative;
+  border: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--text) 6%, transparent);
+  overflow: auto;           /* scroll si se excede */
+  box-shadow: var(--shadow);
+}
+.codeblock__pre{
+  margin: 0;
+  padding: 12px 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre;
+}
+
+/* Pequeño toque para pares clave/valor JSON (sin highlight real, solo legible) */
+.lang-json code{
+  tab-size: 2;
+}
+
+/* Responsive: reduce padding en pantallas pequeñas */
+@media (max-width: 480px){
+  .codeblock__pre{ padding: 10px 12px; font-size: 12.5px; }
+}

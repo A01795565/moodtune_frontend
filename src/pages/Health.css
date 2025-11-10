@@ -1,0 +1,23 @@
+@import '../App.css';
+
+.health{
+  display: grid;
+  gap: 12px;
+}
+.health__title{
+  font-size: clamp(20px, 2.2vw, 24px);
+  margin: 0;
+}
+.health__toolbar{
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.health__status{
+  margin-left: auto;             /* empuja a la derecha si hay espacio */
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Coloca el bloque de código con margen superior consistente */
+.health__content{
+  display: grid; gap: 10px;
+}
