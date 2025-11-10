@@ -20,21 +20,24 @@ import './App.css';
 
 // Componente de ruta protegida: redirige a /login si no hay autenticación.
 function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  // Mientras está cargando, no redirigimos para evitar race condition
+  if (loading) return null; // o <div>Cargando...</div> si prefieres mostrar algo
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return children;
 }
 
 export default function App() {
   const rawAuth = useAuth();
-  const resolved = rawAuth.isAuthenticated === true || rawAuth.isAuthenticated === false;
-  const authed = rawAuth.isAuthenticated === true;
+  const { isAuthenticated, loading } = rawAuth;
+  // Solo consideramos autenticado cuando terminó de cargar
+  const authed = !loading && isAuthenticated;
 
   return (
     <div className="app">
       <AppNavBar
         brand="MoodTune"
-        isAuthenticated={authed && resolved}
+        isAuthenticated={authed}
         onLogout={rawAuth.logout}
         authedItems={[
           { to: '/detect', label: 'Detect' },
@@ -69,7 +72,7 @@ export default function App() {
           <Route path="/audit-logs" element={<ProtectedRoute><AuditLogs /></ProtectedRoute>} />
           <Route path="/oauth-tokens" element={<ProtectedRoute><OAuthTokens /></ProtectedRoute>} />
 
-          <Route path="*" element={<Navigate to={authed ? '/' : '/login'} replace />} />
+          <Route path="*" element={loading ? null : <Navigate to={authed ? '/' : '/login'} replace />} />
         </Routes>
       </main>
     </div>

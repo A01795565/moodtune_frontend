@@ -12,6 +12,7 @@ type AuthContextValue = {
   user: UserInfo | null;
   sessionId: string | null;
   loggingIn: boolean;
+  loading: boolean; // Indica si aún estamos hidratando desde localStorage
   login: (params: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -26,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [loggingIn, setLoggingIn] = useState(false);
+  const [loading, setLoading] = useState(true); // Inicializa en true mientras hidratamos
 
   // Hidrata estado desde localStorage al cargar la app.
   useEffect(() => {
@@ -37,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSessionId(parsed.sessionId ?? null);
       }
     } catch {}
+    setLoading(false); // Terminamos de hidratar
   }, []);
 
   // Persiste estado mínimo de auth para mantener sesión tras recarga.
@@ -83,8 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [navigate, sessionId]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ isAuthenticated: !!sessionId, user, sessionId, loggingIn, login, logout }),
-    [sessionId, user, loggingIn, login, logout]
+    () => ({ isAuthenticated: !!sessionId, user, sessionId, loggingIn, loading, login, logout }),
+    [sessionId, user, loggingIn, loading, login, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
