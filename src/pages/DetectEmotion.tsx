@@ -1,15 +1,27 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../api/client';
 import { ferApi } from '../api/fer';
 import { ragApi, type RagSearchResponse, type RagTrack } from '../api/rag';
-import type { InferenceCreate, Emotion } from '../types/api';
+import type { Emotion, InferenceCreate, PlaylistCreate } from '../types/api';
 
 type DetectionResult = { emotion: Emotion; confidence: number; model_version?: string };
 
+const trackKey = (track: RagTrack) => {
+  const parts = [track.id, track.uri, track.title, track.artist].filter(Boolean);
+  return parts.length ? parts.join('|') : `${track.cover_url || 'track'}-${track.preview_url || ''}`;
+};
+
+const generatePlaylistId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `local-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+};
+
 export default function DetectEmotion() {
-  const { sessionId } = useAuth();
+  const { sessionId, user } = useAuth();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -30,6 +42,13 @@ export default function DetectEmotion() {
   const [tracks, setTracks] = useState<RagSearchResponse | null>(null);
   const [showCount, setShowCount] = useState<number>(10);
   const tracksRef = useRef<HTMLDivElement | null>(null);
+  const [selectedEmotion, setSelectedEmotion] = useState<'happy' | 'sad' | 'angry'>('happy');
+  const [selectedTracks, setSelectedTracks] = useState<Record<string, RagTrack>>({});
+  const [playlistName, setPlaylistName] = useState('');
+  const [savingPlaylist, setSavingPlaylist] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [inferenceConfidence, setInferenceConfidence] = useState(0.5);
 
   useEffect(() => {
     return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
@@ -74,6 +93,39 @@ export default function DetectEmotion() {
   const resetAll = () => {
     setFile(null); setPreviewUrl(null); setResult(null); setError(null); setIntention(''); setSaved(null);
     if (inputRef.current) inputRef.current.value = '';
+  };
+
+  const toggleTrackSelection = (track: RagTrack) => {
+    setSelectedTracks((prev) => {
+      const key = trackKey(track);
+      const next = { ...prev };
+      if (next[key]) {
+        delete next[key];
+      } else {
+        next[key] = track;
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedTracks({});
+
+  const selectAllDisplayed = (tracksToSelect: RagTrack[]) => {
+    const next: Record<string, RagTrack> = {};
+    tracksToSelect.forEach((track) => {
+      next[trackKey(track)] = track;
+    });
+    setSelectedTracks(next);
+  };
+
+  const handleTargetEmotionChange = (value: 'happy' | 'sad' | 'angry') => {
+    setSelectedEmotion(value);
+    setSaveError(null);
+    setSaveMessage(null);
+    setSaved(null);
+    if (intention === 'change') {
+      fetchTracksForEmotion(value);
+    }
   };
 
   const onFileChange = (f: File | null) => {
@@ -147,12 +199,23 @@ export default function DetectEmotion() {
     }
   };
 
-  // Mapear emoción FER -> emoción RAG
-  const mapFerToRagEmotion = (e: Emotion): 'happy' | 'sad' | 'angry' => {
-    if (e === 'joy') return 'happy';
-    if (e === 'sadness') return 'sad';
-    return 'angry';
-  };
+const RAG_EMOTIONS: { key: 'happy' | 'sad' | 'angry'; label: string; description: string }[] = [
+  { key: 'happy', label: 'Feliz', description: 'Energía positiva y optimismo' },
+  { key: 'sad', label: 'Triste', description: 'Introspectivo y melódico' },
+  { key: 'angry', label: 'Intenso', description: 'Ritmos potentes y actitud' },
+];
+
+const mapFerToRagEmotion = (e: Emotion): 'happy' | 'sad' | 'angry' => {
+  if (e === 'joy') return 'happy';
+  if (e === 'sadness') return 'sad';
+  return 'angry';
+};
+
+const ragToInferenceEmotion: Record<'happy' | 'sad' | 'angry', Emotion> = {
+  happy: 'joy',
+  sad: 'sadness',
+  angry: 'anger',
+};
 
   // Helpers de presentación para tracks
   const coverFromApi = (t: RagTrack): string | null => {
@@ -167,13 +230,15 @@ export default function DetectEmotion() {
     return /^https?:\/\//i.test(x) ? x : null;
   };
 
-  // Buscar canciones para la emoción detectada
-  const fetchTracksForEmotion = async () => {
-    if (!result?.emotion) return;
+  const fetchTracksForEmotion = async (overrideEmotion?: 'happy' | 'sad' | 'angry') => {
+    const detectedEmotion = result?.emotion;
+    if (!detectedEmotion && !overrideEmotion) return;
+    const defaultEmotion = overrideEmotion ?? (intention === 'change' ? selectedEmotion : mapFerToRagEmotion(detectedEmotion!));
+    if (!defaultEmotion) return;
+    setSelectedEmotion(defaultEmotion);
     setTracksLoading(true); setTracksError(null); setTracks(null);
     try {
-      const ragEmotion = mapFerToRagEmotion(result.emotion);
-      const res = await ragApi.search({ emotion: ragEmotion, min_tracks: 20 });
+      const res = await ragApi.search({ emotion: defaultEmotion, min_tracks: 20 });
       setTracks(res);
     } catch (e: any) {
       setTracksError(e?.message || 'Error al buscar canciones');
@@ -185,10 +250,29 @@ export default function DetectEmotion() {
   // Auto-buscar canciones cuando haya resultado de emoción
   useEffect(() => {
     if (result?.emotion) {
+      const mapped = mapFerToRagEmotion(result.emotion);
+      setSelectedEmotion(mapped);
+      if (typeof result.confidence === 'number') {
+        setInferenceConfidence(result.confidence);
+      }
       fetchTracksForEmotion();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result?.emotion]);
+
+  useEffect(() => {
+    if (!tracks?.items?.length) {
+      setSelectedTracks({});
+      return;
+    }
+    const limit = Math.max(1, showCount);
+    const chunk = tracks.items.slice(0, limit);
+    const selection: Record<string, RagTrack> = {};
+    chunk.forEach((track) => {
+      selection[trackKey(track)] = track;
+    });
+    setSelectedTracks(selection);
+  }, [tracks, showCount]);
 
   // Auto scroll a la lista cuando llega
   useEffect(() => {
@@ -197,27 +281,70 @@ export default function DetectEmotion() {
     }
   }, [tracksLoading, tracks]);
 
-  const saveInference = async () => {
-    if (!sessionId) { setError('No hay sesion activa. Inicia sesion.'); return; }
-    if (!result) { setError('No hay resultado para guardar.'); return; }
-    if (!intention) { setError('Selecciona una intencion.'); return; }
-    setError(null); setSaved(null);
-    const body: InferenceCreate = {
-      session_id: sessionId,
-      emotion: result.emotion,
-      confidence: result.confidence,
-      intention,
-      model_version: result.model_version,
-    } as InferenceCreate;
-    const t0 = performance.now();
+  const savePlaylist = async () => {
+    if (!sessionId || !user?.user_id) {
+      setSaveError('Inicia sesión para guardar el playlist.');
+      return;
+    }
+    if (!result) {
+      setSaveError('No hay resultado de FER para guardar.');
+      return;
+    }
+    if (!intention) {
+      setSaveError('Selecciona una intención.');
+      return;
+    }
+    if (!playlistName.trim()) {
+      setSaveError('Agrega un nombre para el playlist.');
+      return;
+    }
+    const tracksList = Object.values(selectedTracks);
+    if (!tracksList.length) {
+      setSaveError('Selecciona al menos una canción.');
+      return;
+    }
+    setSaveError(null);
+    setSaveMessage(null);
+    setSavingPlaylist(true);
     try {
-      const created = await api.createInference(body);
-      const latency = Math.round(performance.now() - t0);
-      setSaved(created.inference_id || `ok-${latency}ms`);
+      const inferenceBody: InferenceCreate = {
+        session_id: sessionId,
+        emotion: intention === 'maintain' ? result.emotion : ragToInferenceEmotion[selectedEmotion],
+        confidence: inferenceConfidence,
+        intention,
+        model_version: result.model_version,
+      };
+      const createdInference = await api.createInference(inferenceBody);
+      const playlistId = generatePlaylistId();
+      const summary = {
+        count: tracksList.length,
+        inference_id: createdInference.inference_id,
+        intention,
+        tracks: tracksList.slice(0, 3).map((track) => `${track.title || '—'} — ${track.artist || '—'}`),
+      };
+      const playlistBody: PlaylistCreate = {
+        user_id: user.user_id,
+        provider: 'spotify',
+        external_playlist_id: playlistId,
+        deep_link_url: `https://open.spotify.com/playlist/${playlistId}`,
+        title: playlistName.trim(),
+        description: JSON.stringify(summary),
+      };
+      await api.createPlaylist(playlistBody);
+      setSaveMessage(`Playlist guardada con ${tracksList.length} canciones y la inferencia ${createdInference.inference_id}.`);
+      setSaved(createdInference.inference_id);
     } catch (e: any) {
-      setError(e?.message || 'No se pudo guardar la inferencia');
+      setSaveError(e?.message || 'No se pudo guardar el playlist');
+    } finally {
+      setSavingPlaylist(false);
     }
   };
+
+  const displayedTracks = tracks?.items?.slice(0, Math.max(showCount, 1)) ?? [];
+  const selectedCount = Object.keys(selectedTracks).length;
+  const ragLinkEmotion = intention === 'change'
+    ? selectedEmotion
+    : (result ? mapFerToRagEmotion(result.emotion) : selectedEmotion);
 
   return (
     <div>
@@ -299,7 +426,12 @@ export default function DetectEmotion() {
 
               <div ref={tracksRef} style={{ border: '1px dashed #cbd5e1', borderRadius: 8, padding: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button onClick={fetchTracksForEmotion} disabled={tracksLoading} style={{ padding: '6px 10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => fetchTracksForEmotion(intention === 'change' ? selectedEmotion : undefined)}
+                    disabled={tracksLoading}
+                    style={{ padding: '6px 10px' }}
+                  >
                     {tracksLoading ? 'Buscando canciones…' : 'Descubrir canciones para esta emoción'}
                   </button>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
@@ -308,7 +440,7 @@ export default function DetectEmotion() {
                         {[5,10,15,20,30,50].map(n => <option key={n} value={n}>{n}</option>)}
                       </select>
                     </label>
-                    <Link to={`/explore${result ? `?emotion=${mapFerToRagEmotion(result.emotion)}` : ''}`} style={{ fontSize: 13 }}>Ver más en Explorar ↗</Link>
+                    <Link to={`/explore?emotion=${ragLinkEmotion}`} style={{ fontSize: 13 }}>Ver más en Explorar ↗</Link>
                   </div>
                 </div>
                 {tracksError && <div style={{ color: 'crimson', marginTop: 8 }}>{tracksError}</div>}
@@ -317,48 +449,87 @@ export default function DetectEmotion() {
                     {tracks.note}
                   </div>
                 )}
-                {tracks?.items?.length ? (
+                {displayedTracks.length ? (
                   <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
-                    {tracks.items.slice(0, Math.max(1, showCount)).map((t, idx) => {
-                      const cover = coverFromApi(t as RagTrack);
-                      const link = httpLinkFromUri(t.uri);
-                      return (
-                        <div key={`${t.id || t.uri || idx}`} style={{ display: 'grid', gridTemplateColumns: '30px 56px 1fr auto', gap: 10, alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: 10, padding: 8, background: '#fff' }}>
-                          <div style={{ textAlign: 'right', paddingRight: 4, color: '#64748b', fontVariantNumeric: 'tabular-nums' }}>{idx + 1}.</div>
-                          <div style={{ width: 48, height: 48, borderRadius: 6, overflow: 'hidden', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {cover ? (
-                              <img src={cover} alt="Carátula" width={48} height={48} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                              <div style={{ fontSize: 10, color: '#888' }}>Sin<br/>carátula</div>
-                            )}
-                          </div>
-                          <div>
-                            <div style={{ fontWeight: 600, lineHeight: 1.2 }}>{t.title || '—'}</div>
-                            <div style={{ color: '#555', fontSize: 13 }}>{t.artist || '—'}</div>
-                          </div>
-                          <div>
-                            {link && <a href={link} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>Abrir ↗</a>}
-                          </div>
-                        </div>
-                      );
-                    })}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                      <div style={{ fontSize: 13, color: '#334155' }}>
+                        Seleccionadas: <strong>{selectedCount}</strong> / {displayedTracks.length}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button type="button" onClick={() => selectAllDisplayed(displayedTracks)} style={{ fontSize: 12, padding: '4px 10px' }}>Seleccionar todo</button>
+                        <button type="button" onClick={clearSelection} style={{ fontSize: 12, padding: '4px 10px' }}>Limpiar</button>
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+                      {displayedTracks.map((t, idx) => {
+                        const cover = coverFromApi(t as RagTrack);
+                        const link = httpLinkFromUri(t.uri);
+                        const key = trackKey(t);
+                        const checked = !!selectedTracks[key];
+                        return (
+                          <label key={`${t.id || t.uri || idx}`} style={{ display: 'grid', gridTemplateColumns: '30px 56px 1fr auto', gap: 10, alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: 10, padding: 8, background: '#fff' }}>
+                            <input type="checkbox" checked={checked} onChange={() => toggleTrackSelection(t)} style={{ justifySelf: 'center' }} />
+                            <div style={{ width: 48, height: 48, borderRadius: 6, overflow: 'hidden', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {cover ? (
+                                <img src={cover} alt="Carátula" width={48} height={48} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                <div style={{ fontSize: 10, color: '#888' }}>Sin<br/>carátula</div>
+                              )}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 600, lineHeight: 1.2 }}>{t.title || '—'}</div>
+                              <div style={{ color: '#555', fontSize: 13 }}>{t.artist || '—'}</div>
+                            </div>
+                            <div>
+                              {link && <a href={link} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>Abrir ↗</a>}
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
                 ) : null}
               </div>
             )}
             {/* Estado FER movido a barra superior */}
             <label>
-              Intencion
-              <select value={intention} onChange={(e)=>setIntention(e.target.value as any)}>
+              Intención
+              <select value={intention} onChange={(e)=>{ setIntention(e.target.value as any); setSaveError(null); setSaveMessage(null); setSaved(null); }}>
                 <option value="">Selecciona...</option>
                 <option value="maintain">Mantener</option>
                 <option value="change">Cambiar</option>
               </select>
             </label>
-            <button onClick={saveInference} disabled={!result || !intention}>Guardar inferencia</button>
-            {saved && <div style={{ color: 'green' }}>Inferencia guardada: {saved}</div>}
+            {intention === 'change' && (
+              <label>
+                Emoción objetivo
+                <select value={selectedEmotion} onChange={(e)=>handleTargetEmotionChange(e.target.value as 'happy' | 'sad' | 'angry')}>
+                  {RAG_EMOTIONS.map((e) => (
+                    <option key={e.key} value={e.key}>{e.label}</option>
+                  ))}
+                </select>
+                <small style={{ color: '#475569' }}>Cambia la emoción y luego presiona "Descubrir canciones" para actualizar.</small>
+              </label>
+            )}
+            <label style={{ display: 'grid', gap: 4 }}>
+              Confianza para la inferencia
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input type="range" min={0} max={1} step={0.01} value={inferenceConfidence} onChange={(e)=>setInferenceConfidence(Number(e.target.value))} style={{ flex: 1 }} />
+                <span>{(inferenceConfidence * 100).toFixed(1)}%</span>
+              </div>
+            </label>
+            <label>
+              Nombre del playlist
+              <input value={playlistName} onChange={(e)=>{ setPlaylistName(e.target.value); setSaveError(null); setSaveMessage(null); }} placeholder="Ej. Roadtrip Chill" />
+            </label>
+            <button type="button" onClick={savePlaylist} disabled={savingPlaylist || !playlistName.trim() || !selectedCount || !intention} style={{ padding: '10px 14px' }}>
+              {savingPlaylist ? 'Guardando Playlist…' : 'Guardar Playlist'}
+            </button>
+            {saveError && <div style={{ color: 'crimson' }}>{saveError}</div>}
+            {saveMessage && <div style={{ color: 'green' }}>{saveMessage}</div>}
+            {saved && <div style={{ fontSize: 12, color: '#334155' }}>Inferencia registrada: {saved}</div>}
             <div style={{ color: '#666' }}>
-              A1) Si no se detecta rostro o la imagen esta borrosa, intenta con otra. A2) Ante error/timeout puedes reintentar.
+              1). Si no se detecta rostro o la imagen está borrosa, intenta con otra. 2). Ante error/timeout puedes reintentar.
             </div>
           </div>
         </div>
