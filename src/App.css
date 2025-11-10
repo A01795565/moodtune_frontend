@@ -11,28 +11,53 @@
     --shadow: 0 10px 30px rgba(0,0,0,.35);
     --ring: 0 0 0 3px color-mix(in oklab, var(--primary) 35%, transparent);
     --font: ui-sans-serif, -apple-system, Segoe UI, Roboto, Inter, system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root{
+    --bg: #f6f7fb;
+    --bg-soft: #eef1f6;
+    --card: #ffffff;
+    --text: #151827;
+    --muted: #6b7280;
+    --primary: #2563eb;
+    --primary-strong: #1d4ed8;
+    --danger: #dc2626;
+    --shadow: 0 10px 24px rgba(16,24,40,.08);
   }
+}
+
+*{ box-sizing: border-box; }
+html, body, #root{ height: 100%; }
+body{
+  margin: 0;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+}
   
-  @media (prefers-color-scheme: light) {
-    :root{
-      --bg: #f6f7fb;
-      --bg-soft: #eef1f6;
-      --card: #ffffff;
-      --text: #151827;
-      --muted: #6b7280;
-      --primary: #2563eb;
-      --primary-strong: #1d4ed8;
-      --danger: #dc2626;
-      --shadow: 0 10px 24px rgba(16,24,40,.08);
-    }
-  }
-  
-  *{ box-sizing: border-box; }
-  html, body, #root{ height: 100%; }
-  body{
-    margin: 0;
-    font-family: var(--font);
-    background: var(--bg);
-    color: var(--text);
-  }
-  
+/* Contenedor general de la app */
+.app{
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+/* Wrapper para el contenido enrutado */
+.app__content{
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  padding: clamp(12px, 2.5vw, 20px);
+}
+
+/* Ajustes a enlaces dentro del contenido (no nav) */
+.app__content a{
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation: none !important; transition: none !important; }
+}

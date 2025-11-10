@@ -13,60 +13,65 @@ import AuditLogs from './pages/AuditLogs';
 import OAuthTokens from './pages/OAuthTokens';
 import Admin from './pages/Admin';
 import { useAuth } from './hooks/useAuth';
+
+import AppNavBar from './components/AppNavBar';
+
 import './App.css';
 
 // Componente de ruta protegida: redirige a /login si no hay autenticación.
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const { isAuthenticated } = useAuth();
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
   return children;
 }
 
 export default function App() {
-  const { isAuthenticated, logout } = useAuth();
+  const rawAuth = useAuth();
+  const resolved = rawAuth.isAuthenticated === true || rawAuth.isAuthenticated === false;
+  const authed = rawAuth.isAuthenticated === true;
+
   return (
-    <div style={{ fontFamily: 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif', padding: 16 }}>
-      <header style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-        <Link to="/" style={{ textDecoration: 'none', color: '#222', fontWeight: 700 }}>MoodTune</Link>
-        <nav style={{ display: 'flex', gap: 10 }}>
-          {isAuthenticated ? (
-            <>
-              <Link to="/">Main</Link>
-              <Link to="/detect">Detect</Link>
-              <Link to="/explore">Explorar</Link>
-              <Link to="/admin">Admin</Link>
-              <button onClick={logout} style={{ padding: '6px 10px' }}>Logout</button>
-            </>
-          ) : (
-            <Link to="/login">Login</Link>
-          )}
-        </nav>
-      </header>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Main />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/health" element={<ProtectedRoute><Health /></ProtectedRoute>} />
-        <Route path="/detect" element={<ProtectedRoute><DetectEmotion /></ProtectedRoute>} />
-        <Route path="/explore" element={<ProtectedRoute><ExploreRag /></ProtectedRoute>} />
-        <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-        <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
-        <Route path="/sessions" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
-        <Route path="/inferences" element={<ProtectedRoute><Inferences /></ProtectedRoute>} />
-        <Route path="/playlists" element={<ProtectedRoute><Playlists /></ProtectedRoute>} />
-        <Route path="/mood-map-rules" element={<ProtectedRoute><MoodMapRules /></ProtectedRoute>} />
-        <Route path="/audit-logs" element={<ProtectedRoute><AuditLogs /></ProtectedRoute>} />
-        <Route path="/oauth-tokens" element={<ProtectedRoute><OAuthTokens /></ProtectedRoute>} />
-        <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/login'} replace />} />
-      </Routes>
+    <div className="app">
+      <AppNavBar
+        brand="MoodTune"
+        isAuthenticated={authed && resolved}
+        onLogout={rawAuth.logout}
+        authedItems={[
+          { to: '/detect', label: 'Detect' },
+          { to: '/explore', label: 'Explorar' },
+          { to: '/admin', label: 'Admin' },
+        ]}
+        publicItems={[{ to: '/login', label: 'Login' }]}
+      />
+
+      <main className="app__content">
+        <Routes>
+          <Route path="/login" element={<Login />} />
+
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Main />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="/health" element={<ProtectedRoute><Health /></ProtectedRoute>} />
+          <Route path="/detect" element={<ProtectedRoute><DetectEmotion /></ProtectedRoute>} />
+          <Route path="/explore" element={<ProtectedRoute><ExploreRag /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+          <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+          <Route path="/sessions" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
+          <Route path="/inferences" element={<ProtectedRoute><Inferences /></ProtectedRoute>} />
+          <Route path="/playlists" element={<ProtectedRoute><Playlists /></ProtectedRoute>} />
+          <Route path="/mood-map-rules" element={<ProtectedRoute><MoodMapRules /></ProtectedRoute>} />
+          <Route path="/audit-logs" element={<ProtectedRoute><AuditLogs /></ProtectedRoute>} />
+          <Route path="/oauth-tokens" element={<ProtectedRoute><OAuthTokens /></ProtectedRoute>} />
+
+          <Route path="*" element={<Navigate to={authed ? '/' : '/login'} replace />} />
+        </Routes>
+      </main>
     </div>
   );
 }

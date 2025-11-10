@@ -1,0 +1,66 @@
+.nav{
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in oklab, var(--card) 80%, var(--bg));
+    border-bottom: 1px solid color-mix(in oklab, var(--text) 10%, transparent);
+    backdrop-filter: saturate(1.1) blur(6px);
+  }
+  .nav__inner{
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 12px clamp(12px, 2.5vw, 20px);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px;
+  }
+  .nav__brand{
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 800;
+    letter-spacing: .2px;
+    font-size: clamp(16px, 2vw, 18px);
+  }
+  .nav__menu{
+    display: grid;
+    grid-auto-flow: column;
+    justify-content: end;
+    align-items: center;
+    gap: clamp(8px, 1.6vw, 14px);
+    overflow-x: auto;                 /* Responsivo sin JS */
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;              /* evita cortar focus ring en iOS */
+  }
+  .nav__link{
+    color: var(--muted);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: color .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+    white-space: nowrap;
+  }
+  .nav__link:hover{
+    color: var(--text);
+    background: color-mix(in oklab, var(--text) 6%, transparent);
+    border-color: color-mix(in oklab, var(--text) 10%, transparent);
+  }
+  .nav__link:focus{
+    outline: none;
+    box-shadow: var(--ring);
+  }
+  
+  /* Breakpoint sutil para phones */
+  @media (max-width: 520px){
+    .nav__inner{
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .nav__menu{
+      justify-content: start;
+    }
+  }
+  
