@@ -1,0 +1,116 @@
+@import '../App.css';
+
+/* Layout global */
+.detect{
+  display: grid;
+  gap: 16px;
+}
+.detect__title{
+  font-size: clamp(20px, 2.2vw, 24px);
+  margin: 0;
+}
+.detect__subtitle{
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Barra de estado FER */
+.ferbar{
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--text) 6%, transparent);
+}
+.ferbar__row{
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.ferbar__right{
+  display: grid; gap: 6px; justify-items: end; min-width: 260px; flex: 1 1 260px;
+}
+.ferbar__controls{
+  display: flex; align-items: center; gap: 10px; justify-content: flex-end;
+}
+.ferbar__meta{
+  font-size: 12px; line-height: 1.4; text-align: right;
+  color: #475569;
+}
+.ferbar__meta--error{ color: #9b1c1c; }
+
+/* Grid principal 2 columnas */
+.detect__grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 920px){
+  .detect__grid{ grid-template-columns: 1fr; }
+}
+
+/* Panel izquierdo (input + preview) */
+.detect__uploader{
+  display: grid; gap: 10px;
+}
+.detect__row{
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.detect__preview img{
+  max-width: 100%;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--text) 10%, transparent);
+}
+
+/* Panel derecho (acciones) */
+.detect__panel{
+  display: grid; gap: 10px;
+}
+.detect__box{
+  border: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
+  border-radius: 12px;
+  padding: 12px;
+  background: color-mix(in oklab, var(--text) 6%, transparent);
+}
+
+/* Caja de tracks */
+.detect__tracks{
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 12px;
+}
+.detect__tracks__toolbar{
+  display: flex; align-items: center; gap: 8px;
+}
+.detect__tracks__actions{
+  display: flex; align-items: center; gap: 8px; margin-left: auto;
+}
+.detect__tracks__summary{
+  font-size: 13px; color: #334155;
+}
+.detect__tracks__grid{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.detect__note{
+  background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412;
+  padding: 8px; border-radius: 8px; margin-top: 8px;
+}
+
+/* Form inputs básicos */
+.select, .text, .range{
+  font: inherit;
+  color: var(--text);
+  background: color-mix(in oklab, var(--bg-soft) 70%, var(--card));
+  border: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+.text::placeholder{ color: color-mix(in oklab, var(--muted) 70%, transparent); }
+.select:focus, .text:focus, .range:focus{ outline: none; box-shadow: var(--ring); border-color: var(--primary); }
+.range{ width: 100%; }
+
+/* Utilidades */
+.muted{ color: var(--muted); }
+.success{ color: #16a34a; }
+.error{ color: #dc2626; }
