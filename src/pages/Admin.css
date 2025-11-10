@@ -1,0 +1,28 @@
+@import '../App.css';
+
+.admin{
+  display: grid;
+  gap: 16px;
+}
+
+.admin__title{
+  font-size: clamp(20px, 2.2vw, 24px);
+  margin: 0;
+}
+
+.admin__subtitle{
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Grid responsive de tiles */
+.admin__grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+/* Ajustes finos en pantallas pequeñas */
+@media (max-width: 420px){
+  .admin{ gap: 14px; }
+}
