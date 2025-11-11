@@ -12,6 +12,7 @@ import AppAlert from '../components/AppAlert';
 import AppBadge from '../components/AppBadge';
 import AppFormField from '../components/AppFormField';
 import AppTrackItem from '../components/AppTrackItem';
+import { linkInfoForTrack } from '../utils/links';
 
 import './DetectEmotion.css';
 import AppFilePicker from '../components/AppFilePicker';
@@ -214,10 +215,6 @@ export default function DetectEmotion() {
     let u = candidates[0];
     u = u.replace(/100x100bb\.(jpg|png)$/i, '300x300bb.$1');
     return u;
-  };
-  const httpLinkFromUri = (u?: string | null): string | null => {
-    const x = (u || '').trim();
-    return /^https?:\/\//i.test(x) ? x : null;
   };
 
   const fetchTracksForEmotion = async (overrideEmotion?: 'happy' | 'sad' | 'angry') => {
@@ -444,7 +441,17 @@ export default function DetectEmotion() {
                   <div className="detect__tracks__grid">
                     {displayedTracks.map((t, idx) => {
                       const cover = coverFromApi(t as RagTrack);
-                      const link = httpLinkFromUri(t.uri);
+                      const linkInfo = linkInfoForTrack(t as any);
+                      const providerLabel = linkInfo
+                        ? linkInfo.kind === 'spotify'
+                          ? 'Spotify'
+                          : linkInfo.kind === 'itunes'
+                            ? 'Apple Music'
+                            : 'sitio web'
+                        : null;
+                      const linkA11y = linkInfo && providerLabel
+                        ? ['Abrir en ' + providerLabel, t.title, t.artist].filter(Boolean).join(' - ')
+                        : null;
                       const key = trackKey(t);
                       const checked = !!selectedTracks[key];
                       return (
@@ -454,7 +461,8 @@ export default function DetectEmotion() {
                           title={t.title}
                           artist={t.artist}
                           coverUrl={cover}
-                          linkUrl={link}
+                          linkInfo={linkInfo ?? undefined}
+                          linkLabel={linkA11y ?? undefined}
                           onToggle={() => toggleTrackSelection(t)}
                         />
                       );

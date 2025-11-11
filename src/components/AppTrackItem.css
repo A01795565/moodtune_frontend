@@ -17,7 +17,18 @@
   .track__noimg{ font-size: 10px; color: #888; text-align: center; line-height: 1.1; }
   .track__title{ font-weight: 600; line-height: 1.2; }
   .track__artist{ color: #555; font-size: 13px; }
-  .track__link{ font-size: 12px; color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+  .track__actions{ display: flex; justify-content: flex-end; }
+  .track__link{
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    background: #f5f5f7;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    text-decoration: none;
+  }
+  .track__link svg{ display: block; }
   
   @media (prefers-color-scheme: dark){
     .track{ background: color-mix(in oklab, var(--card) 90%, var(--bg)); border-color: color-mix(in oklab, var(--text) 12%, transparent); }
