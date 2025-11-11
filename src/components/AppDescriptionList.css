@@ -1,0 +1,30 @@
+.dl{
+    display: grid;
+    gap: 8px;
+    margin: 0;
+  }
+  .dl__row{
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 10px;
+    align-items: baseline;
+  }
+  .dl__term{
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0;
+  }
+  .dl__desc{
+    margin: 0;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+  
+  /* Compactar en móvil */
+  @media (max-width: 520px){
+    .dl__row{
+      grid-template-columns: 1fr;
+      gap: 4px;
+    }
+  }
+  

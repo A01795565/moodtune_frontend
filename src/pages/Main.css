@@ -1,0 +1,29 @@
+@import '../App.css';
+
+.main{
+  display: grid;
+  gap: 16px;
+}
+
+/* Encabezado de la página */
+.main__title{
+  font-size: clamp(20px, 2.2vw, 24px);
+  margin: 0 0 4px;
+}
+
+/* Grid de tarjetas (responsive sin JS) */
+.main__grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+/* Wrapper de sección de usuario */
+.main__user{
+  display: grid;
+}
+
+/* Ajustes de densidad en pantallas pequeñas */
+@media (max-width: 420px){
+  .main{ gap: 14px; }
+}

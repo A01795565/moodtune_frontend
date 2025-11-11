@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import AppTileLink from '../components/AppTileLink';
+import './Admin.css';
 
 export default function Admin() {
   const items = [
@@ -13,21 +14,15 @@ export default function Admin() {
   ];
 
   return (
-    <div>
-      <h2>Admin</h2>
-      <p style={{ color: '#666' }}>Menú de administración de MoodTune.</p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-        {items.map(i => (
-          <Link key={i.to} to={i.to} style={{
-            display: 'block', border: '1px solid #ddd', padding: 12, borderRadius: 8,
-            textDecoration: 'none', color: '#222', background: '#fafafa'
-          }}>
-            <div style={{ fontWeight: 700 }}>{i.title}</div>
-            <div style={{ color: '#666', fontSize: 13 }}>{i.desc}</div>
-          </Link>
+    <div className="admin">
+      <h2 className="admin__title">Admin</h2>
+      <p className="admin__subtitle">Menú de administración de MoodTune.</p>
+
+      <div className="admin__grid">
+        {items.map((i) => (
+          <AppTileLink key={i.to} to={i.to} title={i.title} desc={i.desc} />
         ))}
       </div>
     </div>
   );
 }
-

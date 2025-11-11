@@ -1,0 +1,21 @@
+.badge{
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 13px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .badge--success{
+    background: #def7ec; color: #03543f; border-color: #84e1bc;
+  }
+  .badge--neutral{
+    background: #eef2ff; color: #3730a3; border-color: #c7d2fe;
+  }
+  .badge--warning{
+    background: #fff7ed; color: #9a3412; border-color: #fed7aa;
+  }
+  .badge--error{
+    background: #fde8e8; color: #9b1c1c; border-color: #fecaca;
+  }
+  

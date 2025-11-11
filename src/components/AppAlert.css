@@ -1,0 +1,27 @@
+.alert{
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    font-size: 14px;
+  }
+  .alert__icon{ width: 18px; height: 18px; }
+  
+  .alert--info{
+    background: color-mix(in oklab, var(--primary) 18%, transparent);
+    border-color: color-mix(in oklab, var(--primary) 35%, transparent);
+  }
+  .alert--success{
+    background: color-mix(in oklab, #22c55e 18%, transparent);
+    border-color: color-mix(in oklab, #22c55e 35%, transparent);
+  }
+  .alert--warning{
+    background: color-mix(in oklab, #f59e0b 18%, transparent);
+    border-color: color-mix(in oklab, #f59e0b 35%, transparent);
+  }
+  .alert--error{
+    background: color-mix(in oklab, var(--danger) 20%, transparent);
+    border-color: color-mix(in oklab, var(--danger) 45%, transparent);
+  }
+  .alert__text{ line-height: 1.35; }
+  
