@@ -343,7 +343,7 @@ export default function DetectEmotion() {
                 FER: {ferStatus === 'checking' ? 'comprobando…' : ferStatus === 'ok' ? 'remoto activo' : ferStatus === 'not_set' ? 'no configurado' : 'no disponible'}
               </AppBadge>
 
-              <AppButton variant="ghost" onClick={checkFerNow} disabled={ferStatus === 'checking'}>
+              <AppButton variant="ghost" onClick={checkFerNow} disabled={ferStatus === 'checking'} loading={ferStatus === 'checking'}>
                 Check Status
               </AppButton>
             </div>

@@ -55,7 +55,7 @@ export default function Login() {
               required
               autoComplete="current-password"
             />
-            <AppButton type="submit" variant="primary" loading={loggingIn} fullWidth>
+            <AppButton type="submit" variant="primary" loading={loggingIn} disabled={loggingIn} fullWidth>
               Ingresar
             </AppButton>
           </div>

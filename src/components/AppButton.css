@@ -40,9 +40,17 @@
     inset: 0; margin: auto;
     width: 18px; height: 18px;
     border-radius: 50%;
-    border: 2px solid currentColor;
+    border: 2px solid;
     border-right-color: transparent;
     animation: spin .8s linear infinite;
+  }
+  .btn--primary[data-loading]::after{
+    border-color: #fff;
+    border-right-color: transparent;
+  }
+  .btn--ghost[data-loading]::after{
+    border-color: var(--text);
+    border-right-color: transparent;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   

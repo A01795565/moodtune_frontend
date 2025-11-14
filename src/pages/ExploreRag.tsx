@@ -79,7 +79,7 @@ export default function ExploreRag() {
           </AppFormField>
 
           <AppButton type="submit" disabled={loading} loading={loading}>
-            {loading ? 'Buscando…' : 'Buscar canciones'}
+            Buscar canciones
           </AppButton>
 
           <Link to="/detect" className="explore__spacer muted" style={{ fontSize: 14 }}>
