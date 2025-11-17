@@ -1,5 +1,6 @@
 .card{
-    width: min(100%, 420px);
+    width: 100%;
+    max-width: 480px;
     background: var(--card);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
@@ -7,6 +8,7 @@
     border: 1px solid color-mix(in oklab, var(--text) 10%, transparent);
     backdrop-filter: saturate(1.1) blur(6px);
   }
+  .card--full{ max-width: none; }
   .card__header{ margin-bottom: 14px; }
   .card__title{
     font-size: clamp(22px, 2.2vw, 26px);

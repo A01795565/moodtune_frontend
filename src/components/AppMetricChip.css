@@ -7,7 +7,4 @@
     margin-right: 6px;
     border: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
   }
-  @media (prefers-color-scheme: light){
-    .chip{ color: #444; background: #f2f4f7; border-color: #e5e7eb; }
-  }
   

@@ -8,6 +8,9 @@ type CardProps = {
   footerSlot?: React.ReactNode;
   children: React.ReactNode;
   as?: keyof JSX.IntrinsicElements;
+  className?: string;
+  fullWidth?: boolean;
+  style?: React.CSSProperties;
 };
 
 export default function AppCard({
@@ -17,9 +20,18 @@ export default function AppCard({
   footerSlot,
   children,
   as: Tag = 'section',
+  className,
+  fullWidth = false,
+  style,
 }: CardProps) {
+  const classes = [
+    'card',
+    fullWidth ? 'card--full' : '',
+    className,
+  ].filter(Boolean).join(' ');
+
   return (
-    <Tag className="card">
+    <Tag className={classes} style={style}>
       {(title || subtitle || headerSlot) && (
         <header className="card__header">
           {headerSlot}

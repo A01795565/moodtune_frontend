@@ -7,15 +7,23 @@
     white-space: nowrap;
   }
   .badge--success{
-    background: #def7ec; color: #03543f; border-color: #84e1bc;
+    background: color-mix(in oklab, var(--success) 18%, transparent);
+    color: color-mix(in oklab, var(--success) 85%, var(--text));
+    border-color: color-mix(in oklab, var(--success) 45%, transparent);
   }
   .badge--neutral{
-    background: #eef2ff; color: #3730a3; border-color: #c7d2fe;
+    background: color-mix(in oklab, var(--primary) 16%, transparent);
+    color: color-mix(in oklab, var(--primary) 80%, var(--text));
+    border-color: color-mix(in oklab, var(--primary) 40%, transparent);
   }
   .badge--warning{
-    background: #fff7ed; color: #9a3412; border-color: #fed7aa;
+    background: color-mix(in oklab, var(--warning) 16%, transparent);
+    color: color-mix(in oklab, var(--warning) 85%, var(--text));
+    border-color: color-mix(in oklab, var(--warning) 40%, transparent);
   }
   .badge--error{
-    background: #fde8e8; color: #9b1c1c; border-color: #fecaca;
+    background: color-mix(in oklab, var(--danger) 18%, transparent);
+    color: color-mix(in oklab, var(--danger) 90%, var(--text));
+    border-color: color-mix(in oklab, var(--danger) 45%, transparent);
   }
   

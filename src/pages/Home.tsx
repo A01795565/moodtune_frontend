@@ -16,7 +16,7 @@ export default function Home() {
       ) : (
         <div>Sin usuario cargado</div>
       )}
-      <p style={{ color: '#666', marginTop: 12 }}>
+      <p style={{ color: 'var(--muted)', marginTop: 12 }}>
         Estás autenticado. Usa el botón Logout en el encabezado para cerrar la sesión (/sessions/{'{'}session_id{'}'}).
       </p>
     </div>

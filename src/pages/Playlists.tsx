@@ -1,6 +1,12 @@
 import { FormEvent, useEffect, useState } from 'react';
+import AppAlert from '../components/AppAlert';
+import AppButton from '../components/AppButton';
+import AppCard from '../components/AppCard';
+import AppCodeBlock from '../components/AppCodeBlock';
 import { api } from '../api/client';
 import type { PaginatedPlaylists, Playlist, PlaylistCreate } from '../types/api';
+
+import './AdminShared.css';
 
 export default function Playlists() {
   const [list, setList] = useState<PaginatedPlaylists | null>(null);
@@ -38,62 +44,97 @@ export default function Playlists() {
   };
 
   return (
-    <div>
+    <div className="crud-page">
       <h2>Playlists</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div>
-          <h3>Lista</h3>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-            <label>limit <input type="number" value={limit} onChange={(e)=>setLimit(Number(e.target.value)||0)} style={{ width: 80 }} /></label>
-            <label>offset <input type="number" value={offset} onChange={(e)=>setOffset(Number(e.target.value)||0)} style={{ width: 80 }} /></label>
-            <label>user_id <input value={userFilter} onChange={(e)=>setUserFilter(e.target.value)} placeholder="uuid opcional" style={{ width: 200 }} /></label>
-            <button onClick={fetchList} disabled={loading}>Refrescar</button>
+      {error && <AppAlert tone="error">{error}</AppAlert>}
+
+      <div className="crud-page__grid crud-page__grid--two">
+        <AppCard title="Lista" fullWidth>
+          <div className="crud-toolbar">
+            <label className="crud-field">
+              <span>limit</span>
+              <input className="crud-input" type="number" value={limit} onChange={(e)=>setLimit(Number(e.target.value)||0)} />
+            </label>
+            <label className="crud-field">
+              <span>offset</span>
+              <input className="crud-input" type="number" value={offset} onChange={(e)=>setOffset(Number(e.target.value)||0)} />
+            </label>
+            <label className="crud-field" style={{ minWidth: 220 }}>
+              <span>user_id</span>
+              <input className="crud-input" value={userFilter} onChange={(e)=>setUserFilter(e.target.value)} placeholder="uuid opcional" />
+            </label>
+            <AppButton onClick={fetchList} disabled={loading} loading={loading} size="sm">
+              Refrescar
+            </AppButton>
           </div>
-          {loading && <div>Cargando…</div>}
-          {error && <div style={{ color: 'crimson' }}>{error}</div>}
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr><th style={{textAlign:'left'}}>ID</th><th>Provider</th><th>Title</th><th>Acciones</th></tr>
-            </thead>
-            <tbody>
-              {list?.items?.map(p => (
-                <tr key={p.playlist_id}>
-                  <td style={{ fontFamily: 'monospace' }}>{p.playlist_id}</td>
-                  <td>{p.provider}</td>
-                  <td>{p.title}</td>
-                  <td>
-                    <button onClick={() => onView(p.playlist_id)}>Ver</button>{' '}
-                    <button onClick={() => onDelete(p.playlist_id)}>Eliminar</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div>
-          <h3>Crear playlist</h3>
-          <form onSubmit={onCreate} style={{ display: 'grid', gap: 8 }}>
-            <label>user_id <input value={form.user_id} onChange={(e)=>setForm(f=>({...f, user_id: e.target.value}))} required /></label>
-            <label>provider
-              <select value={form.provider} onChange={(e)=>setForm(f=>({...f, provider: e.target.value as any}))}>
+          {loading && <div className="crud-status">Cargando…</div>}
+
+          <div className="crud-table-wrapper">
+            <table className="crud-table">
+              <thead>
+                <tr><th>ID</th><th>Provider</th><th>Title</th><th>Acciones</th></tr>
+              </thead>
+              <tbody>
+                {list?.items?.map(p => (
+                  <tr key={p.playlist_id}>
+                    <td style={{ fontFamily: 'monospace' }}>{p.playlist_id}</td>
+                    <td>{p.provider}</td>
+                    <td>{p.title}</td>
+                    <td>
+                      <div className="crud-actions">
+                        <AppButton size="sm" variant="ghost" onClick={() => onView(p.playlist_id)}>Ver</AppButton>
+                        <AppButton size="sm" variant="ghost" onClick={() => onDelete(p.playlist_id)}>Eliminar</AppButton>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </AppCard>
+
+        <AppCard title="Crear playlist" fullWidth>
+          <form className="crud-form" onSubmit={onCreate}>
+            <label className="crud-field">
+              <span>user_id</span>
+              <input className="crud-input" value={form.user_id} onChange={(e)=>setForm(f=>({...f, user_id: e.target.value}))} required />
+            </label>
+            <label className="crud-field">
+              <span>provider</span>
+              <select className="crud-select" value={form.provider} onChange={(e)=>setForm(f=>({...f, provider: e.target.value as any}))}>
                 <option value="spotify">spotify</option>
                 <option value="apple_music">apple_music</option>
                 <option value="amazon_music">amazon_music</option>
               </select>
             </label>
-            <label>external_playlist_id <input value={form.external_playlist_id} onChange={(e)=>setForm(f=>({...f, external_playlist_id: e.target.value}))} required /></label>
-            <label>deep_link_url <input value={form.deep_link_url} onChange={(e)=>setForm(f=>({...f, deep_link_url: e.target.value}))} required /></label>
-            <label>title <input value={form.title||''} onChange={(e)=>setForm(f=>({...f, title: e.target.value || undefined}))} /></label>
-            <label>description <input value={form.description||''} onChange={(e)=>setForm(f=>({...f, description: e.target.value || undefined}))} /></label>
-            <button type="submit" disabled={creating}>{creating ? 'Creando…' : 'Crear'}</button>
+            <label className="crud-field">
+              <span>external_playlist_id</span>
+              <input className="crud-input" value={form.external_playlist_id} onChange={(e)=>setForm(f=>({...f, external_playlist_id: e.target.value}))} required />
+            </label>
+            <label className="crud-field">
+              <span>deep_link_url</span>
+              <input className="crud-input" value={form.deep_link_url} onChange={(e)=>setForm(f=>({...f, deep_link_url: e.target.value}))} required />
+            </label>
+            <label className="crud-field">
+              <span>title</span>
+              <input className="crud-input" value={form.title||''} onChange={(e)=>setForm(f=>({...f, title: e.target.value || undefined}))} />
+            </label>
+            <label className="crud-field">
+              <span>description</span>
+              <input className="crud-input" value={form.description||''} onChange={(e)=>setForm(f=>({...f, description: e.target.value || undefined}))} />
+            </label>
+            <AppButton type="submit" disabled={creating} loading={creating}>
+              {creating ? 'Creando…' : 'Crear'}
+            </AppButton>
           </form>
+
           {selected && (
-            <div style={{ marginTop: 16 }}>
-              <h3>Detalle</h3>
-              <pre style={{ background: '#f6f8fa', padding: 12, borderRadius: 8 }}>{JSON.stringify(selected, null, 2)}</pre>
-            </div>
+            <>
+              <h4 className="crud-heading">Detalle</h4>
+              <AppCodeBlock value={JSON.stringify(selected, null, 2)} language="json" />
+            </>
           )}
-        </div>
+        </AppCard>
       </div>
     </div>
   );

@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react';
+import AppAlert from '../components/AppAlert';
+import AppButton from '../components/AppButton';
+import AppCard from '../components/AppCard';
+import AppCodeBlock from '../components/AppCodeBlock';
 import { api } from '../api/client';
 import type { PaginatedSessions, Session } from '../types/api';
+
+import './AdminShared.css';
 
 export default function Sessions() {
   const [list, setList] = useState<PaginatedSessions | null>(null);
@@ -32,47 +38,60 @@ export default function Sessions() {
   };
 
   return (
-    <div>
+    <div className="crud-page">
       <h2>Sessions</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div>
-          <h3>Lista</h3>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-            <label>limit <input type="number" value={limit} onChange={(e)=>setLimit(Number(e.target.value)||0)} style={{ width: 80 }} /></label>
-            <label>offset <input type="number" value={offset} onChange={(e)=>setOffset(Number(e.target.value)||0)} style={{ width: 80 }} /></label>
-            <button onClick={fetchList} disabled={loading}>Refrescar</button>
+      {error && <AppAlert tone="error">{error}</AppAlert>}
+
+      <div className="crud-page__grid crud-page__grid--two">
+        <AppCard title="Lista" fullWidth>
+          <div className="crud-toolbar">
+            <label className="crud-field">
+              <span>limit</span>
+              <input className="crud-input" type="number" value={limit} onChange={(e)=>setLimit(Number(e.target.value)||0)} />
+            </label>
+            <label className="crud-field">
+              <span>offset</span>
+              <input className="crud-input" type="number" value={offset} onChange={(e)=>setOffset(Number(e.target.value)||0)} />
+            </label>
+            <AppButton onClick={fetchList} disabled={loading} loading={loading} size="sm">
+              Refrescar
+            </AppButton>
           </div>
-          {loading && <div>Cargando…</div>}
-          {error && <div style={{ color: 'crimson' }}>{error}</div>}
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr><th style={{textAlign:'left'}}>ID</th><th>User</th><th>Inicio</th><th>Fin</th><th>Acciones</th></tr>
-            </thead>
-            <tbody>
-              {list?.items?.map(s => (
-                <tr key={s.session_id}>
-                  <td style={{ fontFamily: 'monospace' }}>{s.session_id}</td>
-                  <td style={{ fontFamily: 'monospace' }}>{s.user_id}</td>
-                  <td>{new Date(s.started_at).toLocaleString()}</td>
-                  <td>{s.ended_at ? new Date(s.ended_at).toLocaleString() : '—'}</td>
-                  <td>
-                    <button onClick={() => onView(s.session_id)}>Ver</button>{' '}
-                    <button onClick={() => onEnd(s.session_id)}>Terminar</button>{' '}
-                    <button onClick={() => onDelete(s.session_id)}>Eliminar</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div>
-          <h3>Detalle</h3>
+
+          {loading && <div className="crud-status">Cargando…</div>}
+          <div className="crud-table-wrapper">
+            <table className="crud-table">
+              <thead>
+                <tr><th>ID</th><th>User</th><th>Inicio</th><th>Fin</th><th>Acciones</th></tr>
+              </thead>
+              <tbody>
+                {list?.items?.map(s => (
+                  <tr key={s.session_id}>
+                    <td style={{ fontFamily: 'monospace' }}>{s.session_id}</td>
+                    <td style={{ fontFamily: 'monospace' }}>{s.user_id}</td>
+                    <td>{new Date(s.started_at).toLocaleString()}</td>
+                    <td>{s.ended_at ? new Date(s.ended_at).toLocaleString() : '—'}</td>
+                    <td>
+                      <div className="crud-actions">
+                        <AppButton size="sm" variant="ghost" onClick={() => onView(s.session_id)}>Ver</AppButton>
+                        <AppButton size="sm" variant="ghost" onClick={() => onEnd(s.session_id)}>Terminar</AppButton>
+                        <AppButton size="sm" variant="ghost" onClick={() => onDelete(s.session_id)}>Eliminar</AppButton>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </AppCard>
+
+        <AppCard title="Detalle" fullWidth>
           {selected ? (
-            <pre style={{ background: '#f6f8fa', padding: 12, borderRadius: 8 }}>{JSON.stringify(selected, null, 2)}</pre>
+            <AppCodeBlock value={JSON.stringify(selected, null, 2)} language="json" />
           ) : (
-            <div>Selecciona una sesión para ver detalle.</div>
+            <div className="crud-empty">Selecciona una sesión para ver detalle.</div>
           )}
-        </div>
+        </AppCard>
       </div>
     </div>
   );

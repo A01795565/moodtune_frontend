@@ -38,7 +38,9 @@
 
 /* Resultados */
 .explore__note{
-  background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412;
+  background: color-mix(in oklab, var(--warning) 18%, transparent);
+  border: 1px solid color-mix(in oklab, var(--warning) 45%, transparent);
+  color: color-mix(in oklab, var(--warning) 90%, var(--text));
   padding: 10px; border-radius: 8px; margin-bottom: 12px;
 }
 .explore__summary{ color: var(--muted); }

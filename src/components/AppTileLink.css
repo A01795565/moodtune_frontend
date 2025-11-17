@@ -45,12 +45,3 @@
   color: var(--muted);
   font-size: 13px;
 }
-
-/* Dark/light afinado */
-@media (prefers-color-scheme: light){
-  .atile__addon{
-    background: #f2f4f7;
-    border-color: #e5e7eb;
-    color: #444;
-  }
-}

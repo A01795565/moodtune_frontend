@@ -3,36 +3,32 @@
     grid-template-columns: 30px 56px 1fr auto;
     gap: 10px;
     align-items: center;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
+    border: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
+    border-radius: 12px;
     padding: 8px;
-    background: #fff;
+    background: color-mix(in oklab, var(--card) 85%, var(--bg));
   }
   .track__check{ justify-self: center; }
   .track__cover{
-    width: 48px; height: 48px; border-radius: 6px; overflow: hidden;
-    background: #f3f4f6; display: flex; align-items: center; justify-content: center;
+    width: 48px; height: 48px; border-radius: 8px; overflow: hidden;
+    background: color-mix(in oklab, var(--text) 8%, transparent); display: flex; align-items: center; justify-content: center;
   }
   .track__cover img{ width: 100%; height: 100%; object-fit: cover; display: block; }
-  .track__noimg{ font-size: 10px; color: #888; text-align: center; line-height: 1.1; }
+  .track__noimg{ font-size: 10px; color: var(--muted); text-align: center; line-height: 1.1; }
   .track__title{ font-weight: 600; line-height: 1.2; }
-  .track__artist{ color: #555; font-size: 13px; }
+  .track__artist{ color: var(--muted); font-size: 13px; }
   .track__actions{ display: flex; justify-content: flex-end; }
   .track__link{
     width: 32px;
     height: 32px;
     border-radius: 999px;
-    background: #f5f5f7;
+    background: color-mix(in oklab, var(--text) 10%, transparent);
+    color: var(--text);
     display: inline-flex;
     justify-content: center;
     align-items: center;
     text-decoration: none;
   }
   .track__link svg{ display: block; }
-  
-  @media (prefers-color-scheme: dark){
-    .track{ background: color-mix(in oklab, var(--card) 90%, var(--bg)); border-color: color-mix(in oklab, var(--text) 12%, transparent); }
-    .track__cover{ background: color-mix(in oklab, var(--text) 6%, transparent); }
-    .track__artist{ color: var(--muted); }
-  }
-  
+  .track__link:hover{ transform: translateY(-1px); }
+

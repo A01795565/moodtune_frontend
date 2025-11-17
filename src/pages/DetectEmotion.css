@@ -33,9 +33,9 @@
 }
 .ferbar__meta{
   font-size: 12px; line-height: 1.4; text-align: right;
-  color: #475569;
+  color: color-mix(in oklab, var(--muted) 85%, var(--text));
 }
-.ferbar__meta--error{ color: #9b1c1c; }
+.ferbar__meta--error{ color: color-mix(in oklab, var(--danger) 90%, var(--text)); }
 
 /* Grid principal 2 columnas */
 .detect__grid{
@@ -74,7 +74,7 @@
 
 /* Caja de tracks */
 .detect__tracks{
-  border: 1px dashed #cbd5e1;
+  border: 1px dashed color-mix(in oklab, var(--text) 18%, transparent);
   border-radius: 12px;
   padding: 12px;
 }
@@ -85,7 +85,7 @@
   display: flex; align-items: center; gap: 8px; margin-left: auto;
 }
 .detect__tracks__summary{
-  font-size: 13px; color: #334155;
+  font-size: 13px; color: var(--muted);
 }
 .detect__tracks__grid{
   display: grid;
@@ -93,7 +93,9 @@
   gap: 8px;
 }
 .detect__note{
-  background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412;
+  background: color-mix(in oklab, var(--warning) 18%, transparent);
+  border: 1px solid color-mix(in oklab, var(--warning) 45%, transparent);
+  color: color-mix(in oklab, var(--warning) 90%, var(--text));
   padding: 8px; border-radius: 8px; margin-top: 8px;
 }
 
@@ -112,5 +114,5 @@
 
 /* Utilidades */
 .muted{ color: var(--muted); }
-.success{ color: #16a34a; }
-.error{ color: #dc2626; }
+.success{ color: color-mix(in oklab, var(--success) 90%, var(--text)); }
+.error{ color: color-mix(in oklab, var(--danger) 90%, var(--text)); }

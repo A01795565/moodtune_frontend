@@ -8,8 +8,11 @@ type ButtonProps = {
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
+  size?: 'md' | 'sm';
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
   ariaLabel?: string;
+  className?: string;
+  style?: React.CSSProperties;
 };
 
 export default function AppButton({
@@ -19,23 +22,29 @@ export default function AppButton({
   loading = false,
   disabled = false,
   fullWidth = false,
+  size = 'md',
   onClick,
   ariaLabel,
+  className,
+  style,
 }: ButtonProps) {
-  const className = [
+  const classes = [
     'btn',
     variant === 'primary' ? 'btn--primary' : 'btn--ghost',
     fullWidth ? 'btn--full' : '',
-  ].join(' ');
+    size === 'sm' ? 'btn--sm' : '',
+    className,
+  ].filter(Boolean).join(' ');
 
   return (
     <button
       type={type}
-      className={className}
+      className={classes}
       onClick={onClick}
       disabled={disabled || loading}
       data-loading={loading || undefined}
       aria-label={ariaLabel}
+      style={style}
     >
       {children}
     </button>

@@ -6,6 +6,8 @@
     --muted: #a0a7be;
     --primary: #6ea8fe;
     --primary-strong: #3f7df5;
+    --success: #22c55e;
+    --warning: #f59e0b;
     --danger: #ff6b6b;
     --radius: 16px;
     --shadow: 0 10px 30px rgba(0,0,0,.35);
@@ -22,6 +24,8 @@
     --muted: #6b7280;
     --primary: #2563eb;
     --primary-strong: #1d4ed8;
+    --success: #16a34a;
+    --warning: #d97706;
     --danger: #dc2626;
     --shadow: 0 10px 24px rgba(16,24,40,.08);
   }

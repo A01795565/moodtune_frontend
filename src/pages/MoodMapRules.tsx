@@ -1,6 +1,12 @@
 import { FormEvent, useEffect, useState } from 'react';
+import AppAlert from '../components/AppAlert';
+import AppButton from '../components/AppButton';
+import AppCard from '../components/AppCard';
+import AppCodeBlock from '../components/AppCodeBlock';
 import { api } from '../api/client';
 import type { MoodMapRule, MoodMapRuleCreate, PaginatedMoodMapRules } from '../types/api';
+
+import './AdminShared.css';
 
 export default function MoodMapRules() {
   const [list, setList] = useState<PaginatedMoodMapRules | null>(null);
@@ -39,87 +45,117 @@ export default function MoodMapRules() {
   };
 
   return (
-    <div>
+    <div className="crud-page">
       <h2>Mood Map Rules</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div>
-          <h3>Lista</h3>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
-            <label>limit <input type="number" value={limit} onChange={(e)=>setLimit(Number(e.target.value)||0)} style={{ width: 80 }} /></label>
-            <label>offset <input type="number" value={offset} onChange={(e)=>setOffset(Number(e.target.value)||0)} style={{ width: 80 }} /></label>
-            <label>emotion
-              <select value={emotionFilter} onChange={(e)=>setEmotionFilter(e.target.value)}>
+      {error && <AppAlert tone="error">{error}</AppAlert>}
+
+      <div className="crud-page__grid crud-page__grid--two">
+        <AppCard title="Lista" fullWidth>
+          <div className="crud-toolbar">
+            <label className="crud-field">
+              <span>limit</span>
+              <input className="crud-input" type="number" value={limit} onChange={(e)=>setLimit(Number(e.target.value)||0)} />
+            </label>
+            <label className="crud-field">
+              <span>offset</span>
+              <input className="crud-input" type="number" value={offset} onChange={(e)=>setOffset(Number(e.target.value)||0)} />
+            </label>
+            <label className="crud-field">
+              <span>emotion</span>
+              <select className="crud-select" value={emotionFilter} onChange={(e)=>setEmotionFilter(e.target.value)}>
                 <option value="">(todas)</option>
                 <option value="joy">joy</option>
                 <option value="sadness">sadness</option>
                 <option value="anger">anger</option>
               </select>
             </label>
-            <label>intention
-              <select value={intentionFilter} onChange={(e)=>setIntentionFilter(e.target.value)}>
+            <label className="crud-field">
+              <span>intention</span>
+              <select className="crud-select" value={intentionFilter} onChange={(e)=>setIntentionFilter(e.target.value)}>
                 <option value="">(todas)</option>
                 <option value="maintain">maintain</option>
                 <option value="change">change</option>
               </select>
             </label>
-            <button onClick={fetchList} disabled={loading}>Refrescar</button>
+            <AppButton onClick={fetchList} disabled={loading} loading={loading} size="sm">
+              Refrescar
+            </AppButton>
           </div>
-          {loading && <div>Cargando…</div>}
-          {error && <div style={{ color: 'crimson' }}>{error}</div>}
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr><th style={{textAlign:'left'}}>ID</th><th>Emoción</th><th>Intention</th><th>Active</th><th>Acciones</th></tr>
-            </thead>
-            <tbody>
-              {list?.items?.map(r => (
-                <tr key={r.rule_id}>
-                  <td style={{ fontFamily: 'monospace' }}>{r.rule_id}</td>
-                  <td>{r.emotion}</td>
-                  <td>{r.intention}</td>
-                  <td>{String(r.is_active)}</td>
-                  <td>
-                    <button onClick={() => onView(r.rule_id)}>Ver</button>{' '}
-                    <button onClick={() => onDelete(r.rule_id)}>Eliminar</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div>
-          <h3>Crear regla</h3>
-          <form onSubmit={onCreate} style={{ display: 'grid', gap: 8 }}>
-            <label>emotion
-              <select value={form.emotion} onChange={(e)=>setForm(f=>({...f, emotion: e.target.value as any}))}>
+          {loading && <div className="crud-status">Cargando…</div>}
+
+          <div className="crud-table-wrapper">
+            <table className="crud-table">
+              <thead>
+                <tr><th>ID</th><th>Emoción</th><th>Intention</th><th>Active</th><th>Acciones</th></tr>
+              </thead>
+              <tbody>
+                {list?.items?.map(r => (
+                  <tr key={r.rule_id}>
+                    <td style={{ fontFamily: 'monospace' }}>{r.rule_id}</td>
+                    <td>{r.emotion}</td>
+                    <td>{r.intention}</td>
+                    <td>{String(r.is_active)}</td>
+                    <td>
+                      <div className="crud-actions">
+                        <AppButton size="sm" variant="ghost" onClick={() => onView(r.rule_id)}>Ver</AppButton>
+                        <AppButton size="sm" variant="ghost" onClick={() => onDelete(r.rule_id)}>Eliminar</AppButton>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </AppCard>
+
+        <AppCard title="Crear regla" fullWidth>
+          <form className="crud-form" onSubmit={onCreate}>
+            <label className="crud-field">
+              <span>emotion</span>
+              <select className="crud-select" value={form.emotion} onChange={(e)=>setForm(f=>({...f, emotion: e.target.value as any}))}>
                 <option value="joy">joy</option>
                 <option value="sadness">sadness</option>
                 <option value="anger">anger</option>
               </select>
             </label>
-            <label>intention
-              <select value={form.intention} onChange={(e)=>setForm(f=>({...f, intention: e.target.value as any}))}>
+            <label className="crud-field">
+              <span>intention</span>
+              <select className="crud-select" value={form.intention} onChange={(e)=>setForm(f=>({...f, intention: e.target.value as any}))}>
                 <option value="maintain">maintain</option>
                 <option value="change">change</option>
               </select>
             </label>
-            <label>version <input type="number" value={form.version||1} onChange={(e)=>setForm(f=>({...f, version: Number(e.target.value)||1}))} /></label>
-            <label>is_active
+            <label className="crud-field">
+              <span>version</span>
+              <input className="crud-input" type="number" value={form.version||1} onChange={(e)=>setForm(f=>({...f, version: Number(e.target.value)||1}))} />
+            </label>
+            <label className="crud-field crud-field--inline">
+              <span>is_active</span>
               <input type="checkbox" checked={!!form.is_active} onChange={(e)=>setForm(f=>({...f, is_active: e.target.checked}))} />
             </label>
-            <label>params_json
-              <textarea value={JSON.stringify(form.params_json||{}, null, 2)} onChange={(e)=>{
-                try { setForm(f=>({...f, params_json: JSON.parse(e.target.value||'{}')})); } catch {}
-              }} rows={6} />
+            <label className="crud-field">
+              <span>params_json</span>
+              <textarea
+                className="crud-textarea"
+                value={JSON.stringify(form.params_json||{}, null, 2)}
+                onChange={(e)=>{
+                  try { setForm(f=>({...f, params_json: JSON.parse(e.target.value||'{}')})); } catch {}
+                }}
+                rows={6}
+              />
             </label>
-            <button type="submit" disabled={creating}>{creating ? 'Creando…' : 'Crear'}</button>
+            <AppButton type="submit" disabled={creating} loading={creating}>
+              {creating ? 'Creando…' : 'Crear'}
+            </AppButton>
           </form>
+
           {selected && (
-            <div style={{ marginTop: 16 }}>
-              <h3>Detalle</h3>
-              <pre style={{ background: '#f6f8fa', padding: 12, borderRadius: 8 }}>{JSON.stringify(selected, null, 2)}</pre>
-            </div>
+            <>
+              <h4 className="crud-heading">Detalle</h4>
+              <AppCodeBlock value={JSON.stringify(selected, null, 2)} language="json" />
+            </>
           )}
-        </div>
+        </AppCard>
       </div>
     </div>
   );
