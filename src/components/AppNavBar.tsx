@@ -63,17 +63,9 @@ export default function AppNavBar({
               className={`nav__theme-toggle nav__theme-toggle--${theme}`}
               onClick={onToggleTheme}
               aria-label={`Cambiar a modo ${theme === 'dark' ? 'claro' : 'oscuro'}`}
-              aria-pressed={theme === 'light'}
+              aria-pressed={theme === 'dark'}
             >
-              <span className="nav__theme-toggle-track" aria-hidden="true">
-                <span className="nav__theme-toggle-icon nav__theme-toggle-icon--sun">
-                  <SunIcon />
-                </span>
-                <span className="nav__theme-toggle-icon nav__theme-toggle-icon--moon">
-                  <MoonIcon />
-                </span>
-                <span className="nav__theme-toggle-thumb" />
-              </span>
+              {theme === 'dark' ? <MoonIcon /> : <SunIcon />}
             </button>
 
             {isAuthenticated && (
