@@ -11,6 +11,7 @@ type ButtonProps = {
   size?: 'md' | 'sm';
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
   ariaLabel?: string;
+  ariaPressed?: boolean;
   className?: string;
   style?: React.CSSProperties;
 };
@@ -25,6 +26,7 @@ export default function AppButton({
   size = 'md',
   onClick,
   ariaLabel,
+  ariaPressed,
   className,
   style,
 }: ButtonProps) {
@@ -44,6 +46,7 @@ export default function AppButton({
       disabled={disabled || loading}
       data-loading={loading || undefined}
       aria-label={ariaLabel}
+      aria-pressed={ariaPressed}
       style={style}
     >
       {children}

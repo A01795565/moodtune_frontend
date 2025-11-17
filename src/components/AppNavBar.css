@@ -53,6 +53,24 @@
     box-shadow: var(--ring);
   }
   
+  .nav__theme-toggle{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .nav__theme-toggle-prefix{
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+  .nav__theme-toggle-state{
+    color: var(--text);
+    font-weight: 700;
+  }
+  
   /* Breakpoint sutil para phones */
   @media (max-width: 520px){
     .nav__inner{

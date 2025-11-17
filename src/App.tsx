@@ -1,4 +1,5 @@
-import { Route, Routes, Navigate, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Route, Routes, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Main from './pages/Main';
 import Health from './pages/Health';
@@ -15,6 +16,7 @@ import Admin from './pages/Admin';
 import { useAuth } from './hooks/useAuth';
 
 import AppNavBar from './components/AppNavBar';
+import { applyThemeToDocument, getInitialTheme, persistTheme, ThemeMode } from './utils/theme';
 
 import './App.css';
 
@@ -28,17 +30,29 @@ function ProtectedRoute({ children }: { children: JSX.Element }) {
 }
 
 export default function App() {
+  const [theme, setTheme] = useState<ThemeMode>(() => getInitialTheme());
   const rawAuth = useAuth();
   const { isAuthenticated, loading } = rawAuth;
   // Solo consideramos autenticado cuando terminó de cargar
   const authed = !loading && isAuthenticated;
 
+  useEffect(() => {
+    applyThemeToDocument(theme);
+    persistTheme(theme);
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   return (
     <div className="app">
       <AppNavBar
         brand="MoodTune"
+        theme={theme}
         isAuthenticated={authed}
         onLogout={rawAuth.logout}
+        onToggleTheme={handleToggleTheme}
         authedItems={[
           { to: '/detect', label: 'Detect' },
           { to: '/explore', label: 'Explorar' },
