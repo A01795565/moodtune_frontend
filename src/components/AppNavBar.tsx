@@ -3,6 +3,26 @@ import AppButton from './AppButton';
 import type { ThemeMode } from '../utils/theme';
 import './AppNavBar.css';
 
+const SunIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none">
+    <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.6" />
+    <line x1="12" y1="2" x2="12" y2="4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <line x1="12" y1="20" x2="12" y2="22" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <line x1="4.93" y1="4.93" x2="6.34" y2="6.34" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <line x1="17.66" y1="17.66" x2="19.07" y2="19.07" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <line x1="2" y1="12" x2="4" y2="12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <line x1="20" y1="12" x2="22" y2="12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <line x1="4.93" y1="19.07" x2="6.34" y2="17.66" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <line x1="17.66" y1="6.34" x2="19.07" y2="4.93" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+  </svg>
+);
+
+const MoonIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="currentColor">
+    <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3a.5.5 0 0 0-.46.75A7 7 0 0 0 20.25 14.96a.5.5 0 0 0 .75-.46Z" />
+  </svg>
+);
+
 type NavItem = { to: string; label: string };
 
 type Props = {
@@ -38,19 +58,23 @@ export default function AppNavBar({
               </Link>
             ))}
   
-            <AppButton
-              variant="ghost"
-              size="sm"
+            <button
+              type="button"
+              className={`nav__theme-toggle nav__theme-toggle--${theme}`}
               onClick={onToggleTheme}
-              ariaLabel={`Cambiar a modo ${theme === 'dark' ? 'claro' : 'oscuro'}`}
-              className="nav__theme-toggle"
-              ariaPressed={theme === 'light'}
+              aria-label={`Cambiar a modo ${theme === 'dark' ? 'claro' : 'oscuro'}`}
+              aria-pressed={theme === 'light'}
             >
-              <span className="nav__theme-toggle-prefix">Tema</span>
-              <span className="nav__theme-toggle-state">
-                {theme === 'dark' ? 'Oscuro' : 'Claro'}
+              <span className="nav__theme-toggle-track" aria-hidden="true">
+                <span className="nav__theme-toggle-icon nav__theme-toggle-icon--sun">
+                  <SunIcon />
+                </span>
+                <span className="nav__theme-toggle-icon nav__theme-toggle-icon--moon">
+                  <MoonIcon />
+                </span>
+                <span className="nav__theme-toggle-thumb" />
               </span>
-            </AppButton>
+            </button>
 
             {isAuthenticated && (
               <AppButton variant="ghost" onClick={onLogout} ariaLabel="Cerrar sesión">

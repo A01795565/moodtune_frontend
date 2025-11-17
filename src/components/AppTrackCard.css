@@ -37,7 +37,7 @@
     border: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
     background: color-mix(in oklab, var(--card) 92%, var(--bg));
     padding: 2px 4px;
-    color-scheme: dark;
+    color-scheme: var(--color-scheme, dark);
     accent-color: var(--primary);
   }
   .trackc__audio::-webkit-media-controls-panel,
