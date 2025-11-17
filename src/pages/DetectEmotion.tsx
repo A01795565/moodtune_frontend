@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import Webcam from 'react-webcam';
 import { useAuth } from '../hooks/useAuth';
 import { useSpotifyToken } from '../hooks/useSpotifyToken';
 import { api } from '../api/client';
@@ -99,6 +100,8 @@ export default function DetectEmotion() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [savedPlaylistUrl, setSavedPlaylistUrl] = useState<string | null>(null);
   const [inferenceConfidence, setInferenceConfidence] = useState(0.5);
+  const [cameraActive, setCameraActive] = useState(false);
+  const webcamRef = useRef<Webcam>(null);
 
   useEffect(() => {
     return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
@@ -140,6 +143,99 @@ export default function DetectEmotion() {
   const resetAll = () => {
     setFile(null); setPreviewUrl(null); setResult(null); setError(null); setIntention(''); setSaved(null);
     if (inputRef.current) inputRef.current.value = '';
+    setCameraActive(false);
+  };
+
+  const compressImageForFER = async (imageFile: File, maxWidth = 256, maxHeight = 256, quality = 0.85): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(imageFile);
+      
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Calcular dimensiones manteniendo aspect ratio
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error('Canvas no soportado'));
+          return;
+        }
+
+        // Dibujar imagen redimensionada
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convertir a blob y luego a File
+        canvas.toBlob(
+          (blob) => {
+            URL.revokeObjectURL(objectUrl);
+            if (!blob) {
+              reject(new Error('Error al comprimir imagen'));
+              return;
+            }
+            const compressedFile = new File([blob], imageFile.name || 'captured-photo.jpg', {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          },
+          'image/jpeg',
+          quality,
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Error al cargar imagen'));
+      };
+      img.src = objectUrl;
+    });
+  };
+
+  const capturePhoto = () => {
+    if (!webcamRef.current) return;
+    
+    const imageSrc = webcamRef.current.getScreenshot();
+    if (!imageSrc) {
+      setError('No se pudo capturar la imagen');
+      return;
+    }
+
+    // Convertir data URL a File
+    fetch(imageSrc)
+      .then(res => res.blob())
+      .then(blob => {
+        const capturedFile = new File([blob], `captured-${Date.now()}.jpg`, {
+          type: 'image/jpeg',
+          lastModified: Date.now(),
+        });
+        
+        // Comprimir para FER
+        return compressImageForFER(capturedFile, 256, 256, 0.85);
+      })
+      .then(compressedFile => {
+        onFileChange(compressedFile);
+        setCameraActive(false);
+      })
+      .catch((e: any) => {
+        setError(e?.message || 'Error al procesar la imagen capturada');
+      });
   };
 
   const toggleTrackSelection = (track: RagTrack) => {
@@ -427,18 +523,60 @@ export default function DetectEmotion() {
           <div className="detect__grid">
         {/* Columna izquierda */}
         <div className="detect__uploader">
-          <AppFilePicker
-            file={file}
-            previewUrl={previewUrl || undefined}
-            onChange={(f) => onFileChange(f)}
-            onClear={resetAll}
-            accept="image/*"
-            maxSizeMB={8}
-            useDropzone
-            errorText={error || null}
-            label="Seleccionar imagen"
-          />
-          {previewUrl && (
+          <div className="detect__upload-options">
+            <AppFilePicker
+              file={file}
+              previewUrl={previewUrl || undefined}
+              onChange={(f) => { setCameraActive(false); onFileChange(f); }}
+              onClear={resetAll}
+              accept="image/*"
+              maxSizeMB={8}
+              useDropzone
+              errorText={error || null}
+              label="Seleccionar imagen"
+              disabled={cameraActive}
+            />
+            <div className="detect__camera-divider">
+              <span>o</span>
+            </div>
+            {!cameraActive ? (
+              <AppButton
+                variant="ghost"
+                onClick={() => setCameraActive(true)}
+                disabled={!!file}
+              >
+                📷 Tomar foto
+              </AppButton>
+            ) : (
+              <div className="detect__camera-preview">
+                <Webcam
+                  audio={false}
+                  ref={webcamRef}
+                  screenshotFormat="image/jpeg"
+                  videoConstraints={{
+                    facingMode: 'user',
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                  }}
+                  className="detect__camera-video"
+                />
+                <div className="detect__camera-controls">
+                  <AppButton
+                    onClick={capturePhoto}
+                  >
+                    📸 Capturar
+                  </AppButton>
+                  <AppButton
+                    variant="ghost"
+                    onClick={() => setCameraActive(false)}
+                  >
+                    Cancelar
+                  </AppButton>
+                </div>
+              </div>
+            )}
+          </div>
+          {previewUrl && !cameraActive && (
             <div className="detect__preview">
               <img ref={imgRef} src={previewUrl} alt="preview" onLoad={() => setError(null)} onError={() => setError('Imagen invalida o corrupta')} />
             </div>

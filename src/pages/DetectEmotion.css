@@ -91,6 +91,61 @@
   border: 1px solid color-mix(in oklab, var(--text) 10%, transparent);
 }
 
+/* Upload options container */
+.detect__upload-options{
+  display: grid;
+  gap: 12px;
+}
+
+/* Camera divider */
+.detect__camera-divider{
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 4px 0;
+}
+.detect__camera-divider::before,
+.detect__camera-divider::after{
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: color-mix(in oklab, var(--text) 15%, transparent);
+}
+.detect__camera-divider span{
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Camera preview container */
+.detect__camera-preview{
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--text) 3%, transparent);
+}
+
+/* Camera video element */
+.detect__camera-video{
+  width: 100%;
+  max-width: 100%;
+  border-radius: 8px;
+  background: #000;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+/* Camera controls */
+.detect__camera-controls{
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
 /* Panel derecho (acciones) */
 .detect__panel{
   display: grid;
