@@ -11,6 +11,10 @@ export default function Main() {
 
   const cards = [
     { to: '/detect', title: 'Detect', desc: 'Detectar emoción desde imagen' },
+    { to: '/my-playlists', title: 'Mis Playlists', desc: 'Consulta y explora playlists guardados' },
+    { to: '/create-playlist', title: 'Crear Playlist', desc: 'Genera playlists guiadas por emoción usando IA' },
+    { to: '/explore', title: 'Explorar', desc: 'Descubre canciones según tu estado de ánimo' },        
+    { to: '/connect-spotify', title: 'Conectar Spotify', desc: 'Vincula Spotify para guardar playlists' },
   ];
 
   return (

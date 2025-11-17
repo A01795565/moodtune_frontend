@@ -3,7 +3,19 @@
 /* Layout global */
 .detect{
   display: grid;
-  gap: 16px;
+  gap: 20px;
+  padding: 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Header with FER indicator */
+.detect__header{
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 .detect__title{
   font-size: clamp(20px, 2.2vw, 24px);
@@ -11,31 +23,49 @@
 }
 .detect__subtitle{
   color: var(--muted);
-  margin: 0;
+  margin: 0.25rem 0 0 0;
+  font-size: 0.95rem;
 }
 
-/* Barra de estado FER */
-.ferbar{
-  margin: 12px 0;
-  padding: 12px;
-  border: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
-  border-radius: 12px;
+/* Simple FER status indicator */
+.detect__fer-indicator{
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
   background: color-mix(in oklab, var(--text) 6%, transparent);
+  border: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
+  cursor: help;
+  transition: all 0.2s ease;
 }
-.ferbar__row{
-  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+.detect__fer-indicator:hover{
+  background: color-mix(in oklab, var(--text) 10%, transparent);
 }
-.ferbar__right{
-  display: grid; gap: 6px; justify-items: end; min-width: 260px; flex: 1 1 260px;
+.detect__fer-indicator__dot{
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
 }
-.ferbar__controls{
-  display: flex; align-items: center; gap: 10px; justify-content: flex-end;
+.detect__fer-indicator--ok .detect__fer-indicator__dot{
+  background-color: #16a34a;
+  box-shadow: 0 0 8px rgba(22, 163, 74, 0.5);
 }
 .ferbar__meta{
   font-size: 12px; line-height: 1.4; text-align: right;
   color: color-mix(in oklab, var(--muted) 85%, var(--text));
 }
 .ferbar__meta--error{ color: color-mix(in oklab, var(--danger) 90%, var(--text)); }
+.detect__fer-indicator--error .detect__fer-indicator__dot{
+  background-color: #dc2626;
+  box-shadow: 0 0 8px rgba(220, 38, 38, 0.5);
+}
+.detect__fer-indicator__label{
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
 
 /* Grid principal 2 columnas */
 .detect__grid{
@@ -63,13 +93,74 @@
 
 /* Panel derecho (acciones) */
 .detect__panel{
-  display: grid; gap: 10px;
+  display: grid;
+  gap: 1.5rem;
 }
-.detect__box{
+
+/* Sections with numbered titles */
+.detect__section{
+  display: grid;
+  gap: 12px;
+  padding: 1rem;
   border: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
   border-radius: 12px;
-  padding: 12px;
+  background: color-mix(in oklab, var(--text) 3%, transparent);
+}
+.detect__section-title{
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid color-mix(in oklab, var(--text) 15%, transparent);
+}
+
+/* Consent checkbox */
+.detect__consent{
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+.detect__consent:hover{
+  background: color-mix(in oklab, var(--text) 5%, transparent);
+}
+.detect__consent input[type="checkbox"]{
+  margin-top: 0.25rem;
+  cursor: pointer;
+}
+.detect__consent span{
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+/* Detection result display */
+.detect__result{
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in oklab, var(--text) 15%, transparent);
+  border-radius: 10px;
   background: color-mix(in oklab, var(--text) 6%, transparent);
+}
+.detect__result-item{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.detect__result-label{
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.detect__result-value{
+  font-weight: 600;
+  color: var(--text);
+  font-size: 1rem;
 }
 
 /* Caja de tracks */
@@ -77,15 +168,26 @@
   border: 1px dashed color-mix(in oklab, var(--text) 18%, transparent);
   border-radius: 12px;
   padding: 12px;
+  display: grid;
+  gap: 12px;
 }
 .detect__tracks__toolbar{
-  display: flex; align-items: center; gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 .detect__tracks__actions{
-  display: flex; align-items: center; gap: 8px; margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 .detect__tracks__summary{
   font-size: 13px; color: var(--muted);
+  font-size: 13px;
+  color: #334155;
+  font-weight: 600;
 }
 .detect__tracks__grid{
   display: grid;
@@ -97,6 +199,13 @@
   border: 1px solid color-mix(in oklab, var(--warning) 45%, transparent);
   color: color-mix(in oklab, var(--warning) 90%, var(--text));
   padding: 8px; border-radius: 8px; margin-top: 8px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 /* Form inputs básicos */

@@ -2,7 +2,10 @@
 
 .admin{
   display: grid;
-  gap: 16px;
+  gap: 2rem;
+  padding: 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .admin__title{
@@ -15,14 +18,40 @@
   margin: 0;
 }
 
+.admin__section {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin__section-title {
+  font-size: 1.25rem;
+  margin: 0;
+  color: #333;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 0.5rem;
+}
+
+/* Health checks grid */
+.admin__health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1rem;
+}
+
 /* Grid responsive de tiles */
 .admin__grid{
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
+  gap: 1rem;
 }
 
 /* Ajustes finos en pantallas pequeñas */
+@media (max-width: 768px){
+  .admin__health-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 420px){
   .admin{ gap: 14px; }
 }

@@ -178,6 +178,14 @@ export interface OAuthTokenUpdate {
 }
 export interface PaginatedOAuthTokens { items: OAuthToken[]; limit: number; offset: number; }
 
+// Valid Token Response (from backend endpoint)
+export interface ValidTokenResponse {
+  provider: MusicProvider;
+  access_token: string;
+  expires_at: string | null;
+  was_refreshed: boolean;
+}
+
 // Genéricos
 export interface UpdateAck { updated: boolean; id?: string }
 export interface DeleteAck { deleted: boolean; id?: string }

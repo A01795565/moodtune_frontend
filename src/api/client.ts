@@ -15,7 +15,7 @@ import type {
   // Audit Logs
   AuditLog, AuditLogCreate, AuditLogUpdate, PaginatedAuditLogs,
   // OAuth
-  OAuthToken, OAuthTokenUpsert, OAuthTokenUpdate, PaginatedOAuthTokens,
+  OAuthToken, OAuthTokenUpsert, OAuthTokenUpdate, PaginatedOAuthTokens, ValidTokenResponse,
   // Acks
   UpdateAck, DeleteAck,
 } from '../types/api';
@@ -172,4 +172,7 @@ export const api = {
   patchOAuthToken: (id: string, body: OAuthTokenUpdate) =>
     http<UpdateAck>(`/oauth-tokens/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteOAuthToken: (id: string) => http<DeleteAck>(`/oauth-tokens/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  // Get valid token with automatic refresh (backend-managed)
+  getValidToken: (userId: string, provider: string) =>
+    http<ValidTokenResponse>(`/oauth-tokens/valid/${encodeURIComponent(userId)}/${encodeURIComponent(provider)}`),
 };

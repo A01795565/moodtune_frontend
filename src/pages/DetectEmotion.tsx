@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useSpotifyToken } from '../hooks/useSpotifyToken';
 import { api } from '../api/client';
 import { ferApi } from '../api/fer';
 import { ragApi, type RagSearchResponse, type RagTrack } from '../api/rag';
-import type { Emotion, InferenceCreate, PlaylistCreate } from '../types/api';
+import { musicApi } from '../api/music';
+import type { Emotion, InferenceCreate } from '../types/api';
 
 import AppButton from '../components/AppButton';
 import AppCard from '../components/AppCard';
@@ -24,15 +26,52 @@ const trackKey = (track: RagTrack) => {
   return parts.length ? parts.join('|') : `${track.cover_url || 'track'}-${track.preview_url || ''}`;
 };
 
-const generatePlaylistId = () => {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
+const MUSIC_PROVIDER: 'spotify' = 'spotify';
+
+const normalizeSpotifyTrackUri = (raw?: string | null): string | null => {
+  if (!raw) return null;
+  const value = raw.trim();
+  if (!value) return null;
+  if (/^spotify:track:/i.test(value)) return value;
+  if (/^spotify:[^:]+:[^:]+/i.test(value)) {
+    const parts = value.split(':');
+    if (parts[1]?.toLowerCase() === 'track' && parts[2]) {
+      return `spotify:track:${parts[2]}`;
+    }
   }
-  return `local-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+  if (/^https?:\/\//i.test(value)) {
+    try {
+      const url = new URL(value);
+      if (url.hostname.toLowerCase().includes('spotify.com')) {
+        const segments = url.pathname.split('/').filter(Boolean);
+        const idx = segments.findIndex((seg) => seg.toLowerCase() === 'track');
+        if (idx >= 0 && segments[idx + 1]) {
+          return `spotify:track:${segments[idx + 1]}`;
+        }
+      }
+    } catch {}
+  }
+  if (/^[A-Za-z0-9]{10,}$/.test(value)) {
+    return `spotify:track:${value}`;
+  }
+  return null;
+};
+
+const collectProviderUris = (tracksList: RagTrack[]): string[] => {
+  const uris = new Set<string>();
+  tracksList.forEach((track) => {
+    const candidate = normalizeSpotifyTrackUri(track.uri);
+    if (candidate) {
+      uris.add(candidate);
+    }
+  });
+  return Array.from(uris);
 };
 
 export default function DetectEmotion() {
   const { sessionId, user } = useAuth();
+  const { isConnected, error: tokenError, getValidToken } = useSpotifyToken();
+  const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -58,6 +97,7 @@ export default function DetectEmotion() {
   const [savingPlaylist, setSavingPlaylist] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [savedPlaylistUrl, setSavedPlaylistUrl] = useState<string | null>(null);
   const [inferenceConfidence, setInferenceConfidence] = useState(0.5);
 
   useEffect(() => {
@@ -122,6 +162,7 @@ export default function DetectEmotion() {
     setSelectedEmotion(value);
     setSaveError(null);
     setSaveMessage(null);
+    setSavedPlaylistUrl(null);
     setSaved(null);
     if (intention === 'change') { fetchTracksForEmotion(value); }
   };
@@ -266,10 +307,27 @@ export default function DetectEmotion() {
     if (!result) { setSaveError('No hay resultado de FER para guardar.'); return; }
     if (!intention) { setSaveError('Selecciona una intención.'); return; }
     if (!playlistName.trim()) { setSaveError('Agrega un nombre para el playlist.'); return; }
+
+    // Check if Spotify is connected
+    if (!isConnected) {
+      setSaveError('Necesitas conectar tu cuenta de Spotify primero.');
+      return;
+    }
+
     const tracksList = Object.values(selectedTracks);
     if (!tracksList.length) { setSaveError('Selecciona al menos una canción.'); return; }
+    const providerUris = collectProviderUris(tracksList);
+    if (!providerUris.length) { setSaveError('Las canciones seleccionadas no tienen URIs compatibles con Spotify.'); return; }
     setSaveError(null); setSaveMessage(null); setSavingPlaylist(true);
     try {
+      // Get valid token (will refresh if expired)
+      const spotifyAccessToken = await getValidToken();
+      if (!spotifyAccessToken) {
+        setSaveError('No se pudo obtener un token válido de Spotify. Por favor reconecta tu cuenta.');
+        setSavingPlaylist(false);
+        return;
+      }
+
       const inferenceBody: InferenceCreate = {
         session_id: sessionId,
         emotion: intention === 'maintain' ? result.emotion : ragToInferenceEmotion[selectedEmotion],
@@ -278,23 +336,38 @@ export default function DetectEmotion() {
         model_version: result.model_version,
       };
       const createdInference = await api.createInference(inferenceBody);
-      const playlistId = generatePlaylistId();
-      const summary = {
-        count: tracksList.length,
+      const sampleTracks = tracksList.slice(0, 3).map(
+        (track) => `${track.title || '(sin titulo)'} - ${track.artist || '(sin artista)'}`,
+      );
+      const description = [
+        `Playlist creada con MoodTune (${intention === 'maintain' ? 'mantener' : 'cambiar'} estado de animo)`,
+        `Canciones seleccionadas: ${tracksList.length}`,
+        sampleTracks.length ? `Ejemplos: ${sampleTracks.join(' | ')}` : null,
+      ].filter(Boolean).join('. ');
+      const providerResult = await musicApi.createMoodtunePlaylist({
+        provider: MUSIC_PROVIDER,
+        provider_access_token: spotifyAccessToken,
+        title: playlistName.trim(),
+        description,
+        uris: providerUris,
+        user_id: user.user_id,
         inference_id: createdInference.inference_id,
         intention,
-        tracks: tracksList.slice(0, 3).map((track) => `${track.title || '—'} — ${track.artist || '—'}`),
-      };
-      const playlistBody: PlaylistCreate = {
+        emotion: inferenceBody.emotion,
+      });
+
+      // Save playlist reference in database
+      await api.createPlaylist({
         user_id: user.user_id,
-        provider: 'spotify',
-        external_playlist_id: playlistId,
-        deep_link_url: `https://open.spotify.com/playlist/${playlistId}`,
-        title: playlistName.trim(),
-        description: JSON.stringify(summary),
-      };
-      await api.createPlaylist(playlistBody);
-      setSaveMessage(`Playlist guardada con ${tracksList.length} canciones y la inferencia ${createdInference.inference_id}.`);
+        provider: MUSIC_PROVIDER,
+        external_playlist_id: providerResult.external_playlist_id,
+        deep_link_url: providerResult.deep_link_url,
+        title: providerResult.title,
+        description: providerResult.description,
+      });
+
+      setSaveMessage(`Playlist creada en ${providerResult.provider} (${providerResult.tracks_added} canciones).`);
+      setSavedPlaylistUrl(providerResult.deep_link_url);
       setSaved(createdInference.inference_id);
     } catch (e: any) {
       setSaveError(e?.message || 'No se pudo guardar el playlist');
@@ -311,56 +384,47 @@ export default function DetectEmotion() {
 
   return (
     <div className="detect">
-      <h2 className="detect__title">Detectar emoción y descubrir música</h2>
-      <p className="detect__subtitle">1) Carga una imagen. 2) Detecta tu emoción. 3) Explora canciones alineadas.</p>
-
-      {/* Barra FER */}
-      <div className="ferbar">
-        <div className="ferbar__row">
-          <label className="detect__row">
-            <input type="checkbox" checked={consent} onChange={(e)=>setConsent(e.target.checked)} />
-            <span>Consentimiento para procesar esta imagen (FER).</span>
-          </label>
-
-          <div className="ferbar__right">
-            <div className="ferbar__controls">
-              <AppBadge
-                tone={
-                  ferStatus === 'ok' ? 'success' :
-                  ferStatus === 'not_set' ? 'neutral' :
-                  ferStatus === 'checking' ? 'neutral' : 'error'
-                }
-                title={
-                  ferStatus === 'ok'
-                    ? 'FER remoto operativo'
-                    : ferStatus === 'not_set'
-                    ? 'VITE_FER_ENDPOINT_URL no configurado'
-                    : ferStatus === 'checking'
-                    ? 'Comprobando FER'
-                    : 'FER no disponible'
-                }
-              >
-                FER: {ferStatus === 'checking' ? 'comprobando…' : ferStatus === 'ok' ? 'remoto activo' : ferStatus === 'not_set' ? 'no configurado' : 'no disponible'}
-              </AppBadge>
-
-              <AppButton variant="ghost" onClick={checkFerNow} disabled={ferStatus === 'checking'} loading={ferStatus === 'checking'}>
-                Check Status
-              </AppButton>
-            </div>
-
-            <div className={`ferbar__meta ${ferStatus === 'error' ? 'ferbar__meta--error' : ''}`}>
-              <div>
-                Endpoint: {import.meta.env.VITE_FER_ENDPOINT_URL || 'no definido'}
-                {ferError ? ` — Error: ${ferError}` : ''}
-              </div>
-              <div>Endpoint efectivo: {ferApi.effectiveEndpoint() || 'no definido'}</div>
-            </div>
-          </div>
+      <div className="detect__header">
+        <div>
+          <h2 className="detect__title">Detectar emoción y descubrir música</h2>
+          <p className="detect__subtitle">Carga una imagen, detecta tu emoción y explora música personalizada</p>
+        </div>
+        <div
+          className={`detect__fer-indicator ${ferStatus === 'ok' ? 'detect__fer-indicator--ok' : 'detect__fer-indicator--error'}`}
+          title={
+            ferStatus === 'ok'
+              ? 'Servicio FER activo'
+              : ferStatus === 'not_set'
+              ? 'FER no configurado'
+              : ferStatus === 'checking'
+              ? 'Verificando FER...'
+              : `FER no disponible${ferError ? ': ' + ferError : ''}`
+          }
+        >
+          <span className="detect__fer-indicator__dot"></span>
+          <span className="detect__fer-indicator__label">FER</span>
         </div>
       </div>
 
-      {/* Grid principal */}
-      <div className="detect__grid">
+      {tokenError && <AppAlert tone="error">{tokenError}</AppAlert>}
+
+      {!isConnected && (
+        <AppAlert tone="warning">
+          <strong>Conexión requerida:</strong> Necesitas conectar tu cuenta de Spotify para crear playlists.{' '}
+          <Link to="/connect-spotify" style={{ textDecoration: 'underline', fontWeight: 'bold' }}>
+            Conectar Spotify ahora
+          </Link>
+        </AppAlert>
+      )}
+
+      {isConnected && (
+        <>
+          <AppAlert tone="success">
+            Spotify conectado ✓
+          </AppAlert>
+
+          {/* Grid principal */}
+          <div className="detect__grid">
         {/* Columna izquierda */}
         <div className="detect__uploader">
           <AppFilePicker
@@ -384,31 +448,52 @@ export default function DetectEmotion() {
 
         {/* Columna derecha */}
         <div className="detect__panel">
-          <AppButton onClick={detect} disabled={!consent || !file || detecting} loading={detecting}>
-            Detectar emoción
-          </AppButton>
+          <div className="detect__section">
+            <h3 className="detect__section-title">1. Detectar emoción</h3>
 
-          {error && <AppAlert tone="error">{error}</AppAlert>}
+            <label className="detect__consent">
+              <input type="checkbox" checked={consent} onChange={(e)=>setConsent(e.target.checked)} />
+              <span>Acepto que se procese mi imagen para detectar emociones</span>
+            </label>
+
+            <AppButton onClick={detect} disabled={!consent || !file || detecting} loading={detecting}>
+              {detecting ? 'Detectando...' : 'Detectar emoción'}
+            </AppButton>
+
+            {error && <AppAlert tone="error">{error}</AppAlert>}
+
+            {result && (
+              <div className="detect__result">
+                <div className="detect__result-item">
+                  <span className="detect__result-label">Emoción:</span>
+                  <span className="detect__result-value">{result.emotion}</span>
+                </div>
+                <div className="detect__result-item">
+                  <span className="detect__result-label">Confianza:</span>
+                  <span className="detect__result-value">{(result.confidence*100).toFixed(1)}%</span>
+                </div>
+                <div className="detect__result-item">
+                  <span className="detect__result-label">Modelo:</span>
+                  <span className="detect__result-value">{result.model_version || '-'}</span>
+                </div>
+              </div>
+            )}
+          </div>
 
           {result && (
-            <div className="detect__box">
-              <div><strong>Emoción:</strong> {result.emotion}</div>
-              <div><strong>Confianza:</strong> {(result.confidence*100).toFixed(1)}%</div>
-              <div><strong>Modelo:</strong> {result.model_version || '-'}</div>
-            </div>
-          )}
+            <div className="detect__section">
+              <h3 className="detect__section-title">2. Descubrir música</h3>
 
-          {result && (
-            <div ref={tracksRef} className="detect__tracks">
-              <div className="detect__tracks__toolbar">
-                <AppButton
-                  type="button"
-                  onClick={() => fetchTracksForEmotion(intention === 'change' ? selectedEmotion : undefined)}
-                  disabled={tracksLoading}
-                  loading={tracksLoading}
-                >
-                  Descubrir canciones para esta emoción
-                </AppButton>
+              <div ref={tracksRef} className="detect__tracks">
+                <div className="detect__tracks__toolbar">
+                  <AppButton
+                    type="button"
+                    onClick={() => fetchTracksForEmotion(intention === 'change' ? selectedEmotion : undefined)}
+                    disabled={tracksLoading}
+                    loading={tracksLoading}
+                  >
+                    {tracksLoading ? 'Buscando...' : 'Descubrir canciones'}
+                  </AppButton>
 
                 <div className="detect__tracks__actions">
                   <AppFormField label="Mostrar">
@@ -470,70 +555,88 @@ export default function DetectEmotion() {
                   </div>
                 </div>
               )}
+              </div>
             </div>
           )}
 
-          <AppFormField label="Intención">
-            <select className="select" value={intention} onChange={(e)=>{ setIntention(e.target.value as any); setSaveError(null); setSaveMessage(null); setSaved(null); }}>
-              <option value="">Selecciona...</option>
-              <option value="maintain">Mantener</option>
-              <option value="change">Cambiar</option>
-            </select>
-          </AppFormField>
+          {result && (
+            <div className="detect__section">
+              <h3 className="detect__section-title">3. Crear playlist</h3>
 
-          {intention === 'change' && (
-            <AppFormField
-              label="Emoción objetivo"
-              hint="Cambia la emoción y luego presiona “Descubrir canciones” para actualizar."
-            >
-              <select className="select" value={selectedEmotion} onChange={(e)=>handleTargetEmotionChange(e.target.value as 'happy' | 'sad' | 'angry')}>
-                {RAG_EMOTIONS.map((e) => (
-                  <option key={e.key} value={e.key}>{e.label}</option>
-                ))}
-              </select>
-            </AppFormField>
+              <AppFormField label="Intención">
+                <select className="select" value={intention} onChange={(e)=>{ setIntention(e.target.value as any); setSaveError(null); setSaveMessage(null); setSaved(null); }}>
+                  <option value="">Selecciona...</option>
+                  <option value="maintain">Mantener mi emoción actual</option>
+                  <option value="change">Cambiar a otra emoción</option>
+                </select>
+              </AppFormField>
+
+              {intention === 'change' && (
+                <AppFormField
+                  label="Emoción objetivo"
+                  hint="Cambia la emoción y luego presiona 'Descubrir canciones' para actualizar."
+                >
+                  <select className="select" value={selectedEmotion} onChange={(e)=>handleTargetEmotionChange(e.target.value as 'happy' | 'sad' | 'angry')}>
+                    {RAG_EMOTIONS.map((e) => (
+                      <option key={e.key} value={e.key}>{e.label}</option>
+                    ))}
+                  </select>
+                </AppFormField>
+              )}
+
+              <AppFormField label="Confianza para la inferencia" inline>
+                <input
+                  className="range"
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={inferenceConfidence}
+                  onChange={(e)=>setInferenceConfidence(Number(e.target.value))}
+                />
+                <span>{(inferenceConfidence * 100).toFixed(1)}%</span>
+              </AppFormField>
+
+              <AppFormField label="Nombre del playlist">
+                <input
+                  className="text"
+                  value={playlistName}
+                  onChange={(e)=>{ setPlaylistName(e.target.value); setSaveError(null); setSaveMessage(null); }}
+                  placeholder="Ej. Roadtrip Chill"
+                />
+              </AppFormField>
+
+              <AppButton
+                type="button"
+                onClick={savePlaylist}
+                disabled={savingPlaylist || !playlistName.trim() || !selectedCount || !intention || !isConnected}
+                loading={savingPlaylist}
+              >
+                {savingPlaylist ? 'Guardando...' : 'Guardar Playlist en Spotify'}
+              </AppButton>
+
+              {saveError && <AppAlert tone="error">{saveError}</AppAlert>}
+              {saveMessage && (
+                <AppAlert tone="success">
+                  {saveMessage}{' '}
+                  {savedPlaylistUrl && (
+                    <a href={savedPlaylistUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline', fontWeight: 'bold' }}>
+                      Abrir en Spotify
+                    </a>
+                  )}
+                </AppAlert>
+              )}
+              {saved && <div className="muted" style={{ fontSize: 12 }}>Inferencia registrada: {saved}</div>}
+
+              <div className="muted" style={{ fontSize: 13, marginTop: '8px' }}>
+                Si no se detecta rostro o la imagen está borrosa, intenta con otra imagen.
+              </div>
+            </div>
           )}
-
-          <AppFormField label="Confianza para la inferencia" inline>
-            <input
-              className="range"
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={inferenceConfidence}
-              onChange={(e)=>setInferenceConfidence(Number(e.target.value))}
-            />
-            <span>{(inferenceConfidence * 100).toFixed(1)}%</span>
-          </AppFormField>
-
-          <AppFormField label="Nombre del playlist">
-            <input
-              className="text"
-              value={playlistName}
-              onChange={(e)=>{ setPlaylistName(e.target.value); setSaveError(null); setSaveMessage(null); }}
-              placeholder="Ej. Roadtrip Chill"
-            />
-          </AppFormField>
-
-          <AppButton
-            type="button"
-            onClick={savePlaylist}
-            disabled={savingPlaylist || !playlistName.trim() || !selectedCount || !intention}
-            loading={savingPlaylist}
-          >
-            Guardar Playlist
-          </AppButton>
-
-          {saveError && <AppAlert tone="error">{saveError}</AppAlert>}
-          {saveMessage && <AppAlert tone="success">{saveMessage}</AppAlert>}
-          {saved && <div className="muted" style={{ fontSize: 12 }}>Inferencia registrada: {saved}</div>}
-
-          <div className="muted">
-            1). Si no se detecta rostro o la imagen está borrosa, intenta con otra. 2). Ante error/timeout puedes reintentar.
-          </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

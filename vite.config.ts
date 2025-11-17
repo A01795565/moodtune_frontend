@@ -28,6 +28,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/rag-proxy/, ''),
       },
+      // Proxy para moodtune_music (creación de playlists en proveedores)
+      '/music-proxy': {
+        target: process.env.VITE_MUSIC_BASE_URL || 'http://localhost:8020',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/music-proxy/, ''),
+      },
     },
   },
 });
