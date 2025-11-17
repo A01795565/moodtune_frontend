@@ -31,7 +31,19 @@
     transition: background .2s ease, transform .06s ease;
   }
   .trackc__link:hover{ transform: translateY(-1px); }
-  .trackc__audio{ width: 100%; }
+  .trackc__audio{
+    width: 100%;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in oklab, var(--text) 12%, transparent);
+    background: color-mix(in oklab, var(--card) 92%, var(--bg));
+    padding: 2px 4px;
+    color-scheme: dark;
+    accent-color: var(--primary);
+  }
+  .trackc__audio::-webkit-media-controls-panel,
+  .trackc__audio::-webkit-media-controls-enclosure{
+    background: transparent;
+  }
   .trackc__noprev{ font-size: 12px; color: var(--muted); }
   .trackc__mood{ font-size: 12px; color: var(--text); }
   
